@@ -1,59 +1,62 @@
- #!/usr/bin/env python
+#!/usr/bin/env python
+
 import rospy
+from tf2_msgs.msg import TFMessage
+from sensor_msgs.msg import Image
+from sensor_msgs.msg import CameraInfo
 import message_filters
-from sensor_msgs.msg import PointCloud2, Image
-from cv_bridge import CvBridge
-import cv2
 import numpy as np
-import pcl
 
-def image_callback(msg):
-    try:
-        bridge = CvBridge()
-        cv_image = bridge.imgmsg_to_cv2(msg, "bgr8")
-        
-        cv2.imshow("Image window", cv_image)
-        cv2.waitKey(1)
-        
-    except Exception as e:
-        print(e)
+img_cnt = 0
+depth_image_cnt = 0
+gt_cnt = 0
 
-def point_cloud_callback(msg):
-    try:
-        cloud = pcl.PointCloud()
-        points = []
-        for data in pcl.PointCloud.from_ros_msg(msg).to_list():
-            points.append([data[0], data[1], data[2]])
-        cloud.from_list(points)
-    
-        print("Received point cloud with %d points" % cloud.size)
-        print("Point cloud header: ", msg.header)
-        
-    except Exception as e:
-        print(e)
+
+def depth_image_callback(msg):
+    global depth_img
+    depth_img = msg
+
+    print("depth_img")
 
 def gt_callback(msg):
-    # todo
-    return 0
-def callback():
-    #todo
-    return 0
+    global gt_data
+
+    for transform in msg.transforms:
+        gt_data = np.array([transform.transform.translation.x,
+                            transform.transform.translation.y,
+                            transform.transform.translation.z,
+                            transform.transform.rotation.x,
+                            transform.transform.rotation.y,
+                            transform.transform.rotation.z,
+                            transform.transform.rotation.w])
+    
+    print("gt_data")
+        
+def camera_info_callback(msg):
+    global camera_info
+    camera_info = np.array([msg.height, msg.width, msg.K[0], msg.K[2], msg.K[4], msg.K[5]])
+
+    print("camera_info")
+
+def image_callback(msg):
+    global img
+    img = msg
+
+    print("img")
 
 
 def filter():
-    rospy.init_node('filter', anonymous=True)
-
-    image = message_filters.Subscriber("/image", image_callback)
-    pointcloud = message_filters.Subscriber("/pointcloud", point_cloud_callback)
-    gt = message_filters.Subscriber("/gt", gt_callback)
-
-    sync_listner = message_filters.TimeSynchronizer([image, pointcloud, gt], 10)
-
-    sync_listner.registerCallback(callback)
-
-if __name__ == '__main__':
     rospy.init_node('rosbag_subscriber', anonymous=True)
 
-    rospy.Subscriber("/image_topic", Image, image_callback)
+    rospy.Subscriber("gt", TFMessage, gt_callback)
+    rospy.Subscriber("/d400/aligned_depth_to_color/image_raw", Image, depth_image_callback)
+    rospy.Subscriber("/d400/color/image_raw", Image, image_callback)
+    rospy.Subscriber("/d400/color/image_raw", Image, image_callback)
+    rospy.Subscriber("/d400/aligned_depth_to_color/camera_info", CameraInfo, camera_info_callback)
+
 
     rospy.spin()
+
+
+if __name__ == '__main__':
+    filter()
