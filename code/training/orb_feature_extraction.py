@@ -21,7 +21,7 @@ class orb_features:
         start_time = time.time()
 
         # Initiate ORB detector
-        orb = cv.ORB_create(nfeatures=500, scaleFactor=1.2, nlevels=8, edgeThreshold=31, firstLevel=0, WTA_K=2, scoreType=cv.ORB_HARRIS_SCORE, patchSize=31, fastThreshold=20)
+        orb = cv.ORB_create(nfeatures=500)
 
         # find the keypoints with ORB
         self.keypoint = orb.detect(self.img, None)
@@ -39,5 +39,15 @@ class orb_features:
         # draw only keypoints location,not size and orientation
         show = cv.drawKeypoints(self.img, self.keypoint, None, color=(0,255,0), flags=0)
         plt.imshow(show), plt.show()
+
+        print("Keypoint position (x, y):", self.keypoint[0].pt)
+        print("Keypoint size:", self.keypoint[0].size)
+        print("Keypoint angle:", self.keypoint[0].angle)
+        print("Keypoint response:", self.keypoint[0].response)
+        print("Keypoint octave:", self.keypoint[0].octave)
+        print("Keypoint class ID:", self.keypoint[0].class_id)
+
+        print("descriptor", self.descriptor[0])
+
 
         return self.keypoint, self.descriptor

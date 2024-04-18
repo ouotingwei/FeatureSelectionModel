@@ -6,8 +6,8 @@ import time
 class feature_match:
     def __init__(self, img1, img2, keypoint1, keypoint2, descriptor1, descriptor2):
         # input images
-        self.img1 = img1
-        self.img2 = img2
+        self.img1 = cv.cvtColor(img1, cv.COLOR_RGB2BGR)
+        self.img2 = cv.cvtColor(img2, cv.COLOR_RGB2BGR)
 
         # input keypoints
         self.keypoint1 = keypoint1
@@ -42,10 +42,11 @@ class feature_match:
         for match in matches:
             if match.distance <= 100 * min_dist:
                 good_matches.append(match)
-               
+        
+        print(len(good_matches))
         
         # Draw only good matches
-        img3 = cv.drawMatches(self.img1, self.keypoint1, self.img2, self.keypoint2, good_matches, None, flags=cv.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
+        img3 = cv.drawMatches(np.uint8(self.img1), self.keypoint1, np.uint8(self.img2), self.keypoint2, good_matches, None, flags=cv.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
         
         # Display the result
         plt.imshow(img3)
