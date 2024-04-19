@@ -3,10 +3,10 @@ import sys
 import numpy as np
 import torch
 import yaml
-from pathlib import Path
 import cv2 as cv
-import argparse
+import time
 
+import orb_feature_extraction as ofe
 from featurebooster import FeatureBooster
 import feature_match as fm
 sys.path.append('/home/wei/deep_feature_selection/code/training/extractors/orbslam2_features/lib')
@@ -21,23 +21,31 @@ def normalize_keypoints(keypoints, image_shape):
     kps[:, 1] = (keypoints[:, 1] - y0) / scale
     return kps 
 
-def booster_seprocess(image):
+def booster_process(image):
+    start_time = time.time()
+
+    # bgr -> gray
+    image = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
+
     # orb extractor
-    feature_extractor = ORBextractor(500, 1.2, 8)
+    feature_extractor = ORBextractor(1000, 1.2, 8)
 
     # set FeatureBooster
     config_file = '/home/wei/deep_feature_selection/code/training/config.yaml'
     with open(str(config_file), 'r') as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
     
+    # Model
     feature_booster = FeatureBooster(config['ORB+Boost-B'])
     if use_cuda:
         feature_booster.cuda()
+
     feature_booster.eval()
 
     feature_booster.load_state_dict(torch.load('/home/wei/deep_feature_selection/code/training/ORB+Boost-B.pth'))
 
     kps_tuples, descriptors = feature_extractor.detectAndCompute(image)
+    
     # convert keypoints 
     keypoints = [cv.KeyPoint(*kp) for kp in kps_tuples]
     keypoints = np.array(
@@ -60,6 +68,10 @@ def booster_seprocess(image):
     out = (out >= 0).cpu().detach().numpy()
     descriptors = np.packbits(out, axis=1, bitorder='little')
 
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    print("feature_booster: ", elapsed_time, "sec")
+
     return keypoints, descriptors
 
 def convert_to_cv_keypoints(keypoints):
@@ -80,17 +92,21 @@ if __name__ == '__main__':
     torch.set_grad_enabled(False)
 
     # get orb keypoints and descriptor from orb_feature_extraction.py ( return keypoint1 & descriptor1 )
-    img1 = cv.imread( "/home/wei/deep_feature_selection/data/test_img/test1/1563004641.130956.png" )
-    #image1_ = ofe.orb_features( img1 )
+    img1 = cv.imread( "/home/wei/deep_feature_selection/data/test_img/test4/1560100074.269736.png" )
+    image1_ = ofe.orb_features( img1 )
+
     #keypoint1, descriptor1 = image1_.feature_extract() 
-    keypoint1, descriptor1 = booster_seprocess(img1)
+    keypoint1, descriptor1 = booster_process(img1)
+
     keypoint1 = convert_to_cv_keypoints(keypoint1)
 
     # get orb keypoints and descriptor from orb_feature_extraction.py ( return keypoint2 & descriptor2 )
-    img2 = cv.imread( "/home/wei/deep_feature_selection/data/test_img/test1/1563004641.164202.png" )
-    #image2_ = ofe.orb_features( img2 )
+    img2 = cv.imread( "/home/wei/deep_feature_selection/data/test_img/test4/1560100074.303095.png" )
+    image2_ = ofe.orb_features( img2 )
+
     #keypoint2, descriptor2 = image2_.feature_extract() 
-    keypoint2, descriptor2 = booster_seprocess(img2)
+    keypoint2, descriptor2 = booster_process(img2)
+
     keypoint2 = convert_to_cv_keypoints(keypoint2)
 
     # matching the feature between two  image frames

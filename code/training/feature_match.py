@@ -34,16 +34,16 @@ class feature_match:
             if dist > max_dist:
                 max_dist = dist
 
-
         print("Found minimum distance", min_dist, max_dist)
         
         # Filter matches based on the Hamming distance
         good_matches = []
         for match in matches:
-            if match.distance <= 100 * min_dist:
+            if match.distance <= 2 * min_dist:
+            #if match.distance <= 50:
                 good_matches.append(match)
         
-        print(len(good_matches))
+        print("There are ", len(good_matches), 'Points with good match')
         
         # Draw only good matches
         img3 = cv.drawMatches(np.uint8(self.img1), self.keypoint1, np.uint8(self.img2), self.keypoint2, good_matches, None, flags=cv.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)

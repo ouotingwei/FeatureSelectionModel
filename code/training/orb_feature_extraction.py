@@ -2,12 +2,17 @@ import numpy as np
 import cv2 as cv
 from matplotlib import pyplot as plt
 import time
+import sys
+
+sys.path.append('/home/wei/deep_feature_selection/code/training/extractors/orbslam2_features/lib')
+from orbslam2_features import ORBextractor
 
 class orb_features:
     def __init__(self, img):
-        self.img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
+        self.img = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
         self.keypoint = None
         self.descriptor = None
+        self.feature_extractor = ORBextractor(1000, 1.2, 8)
     
     def feature_warning( self ):
         num_keypoints = len(self.descriptor)
@@ -21,13 +26,13 @@ class orb_features:
         start_time = time.time()
 
         # Initiate ORB detector
-        orb = cv.ORB_create(nfeatures=500)
+        #orb = cv.ORB_create(nfeatures=500)
 
         # find the keypoints with ORB
-        self.keypoint = orb.detect(self.img, None)
+        #self.keypoint = orb.detect(self.img, None)
 
         # compute the descriptors with ORB
-        self.keypoint, self.descriptor = orb.compute(self.img, self.keypoint)
+        self.keypoint, self.descriptor = self.feature_extractor.detectAndCompute(self.img)
 
         end_time = time.time()
 
@@ -37,17 +42,7 @@ class orb_features:
         self.feature_warning()
 
         # draw only keypoints location,not size and orientation
-        show = cv.drawKeypoints(self.img, self.keypoint, None, color=(0,255,0), flags=0)
-        plt.imshow(show), plt.show()
-
-        print("Keypoint position (x, y):", self.keypoint[0].pt)
-        print("Keypoint size:", self.keypoint[0].size)
-        print("Keypoint angle:", self.keypoint[0].angle)
-        print("Keypoint response:", self.keypoint[0].response)
-        print("Keypoint octave:", self.keypoint[0].octave)
-        print("Keypoint class ID:", self.keypoint[0].class_id)
-
-        print("descriptor", self.descriptor[0])
-
+        # show = cv.drawKeypoints(self.img, self.keypoint, None, color=(0,255,0), flags=0)
+        # plt.imshow(show), plt.show()
 
         return self.keypoint, self.descriptor
