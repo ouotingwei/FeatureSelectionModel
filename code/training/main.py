@@ -7,114 +7,50 @@ import cv2 as cv
 import time
 
 import orb_feature_extraction as ofe
-from featurebooster import FeatureBooster
+from featurebooster import FeatureBooster 
+import featurebooster as fb
 import feature_match as fm
+
 sys.path.append('/home/wei/deep_feature_selection/code/training/extractors/orbslam2_features/lib')
 from orbslam2_features import ORBextractor
 
-def normalize_keypoints(keypoints, image_shape):
-    x0 = image_shape[1] / 2
-    y0 = image_shape[0] / 2
-    scale = max(image_shape) * 0.7
-    kps = np.array(keypoints)
-    kps[:, 0] = (keypoints[:, 0] - x0) / scale
-    kps[:, 1] = (keypoints[:, 1] - y0) / scale
-    return kps 
-
-def booster_process(image):
-    start_time = time.time()
-
-    # bgr -> gray
-    image = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
-
-    # orb extractor
-    feature_extractor = ORBextractor(1000, 1.2, 8)
-
-    # set FeatureBooster
-    config_file = '/home/wei/deep_feature_selection/code/training/config.yaml'
-    with open(str(config_file), 'r') as f:
-        config = yaml.load(f, Loader=yaml.FullLoader)
-    
-    # Model
-    feature_booster = FeatureBooster(config['ORB+Boost-B'])
-    if use_cuda:
-        feature_booster.cuda()
-
-    feature_booster.eval()
-
-    feature_booster.load_state_dict(torch.load('/home/wei/deep_feature_selection/code/training/ORB+Boost-B.pth'))
-
-    kps_tuples, descriptors = feature_extractor.detectAndCompute(image)
-    
-    # convert keypoints 
-    keypoints = [cv.KeyPoint(*kp) for kp in kps_tuples]
-    keypoints = np.array(
-        [[kp.pt[0], kp.pt[1], kp.size / 31, np.deg2rad(kp.angle)] for kp in keypoints], 
-        dtype=np.float32
-    )
-
-    # boosted the descriptor using trained model
-    kps = normalize_keypoints(keypoints, image.shape)
-    kps = torch.from_numpy(kps.astype(np.float32))
-    descriptors = np.unpackbits(descriptors, axis=1, bitorder='little')
-    descriptors = descriptors * 2.0 - 1.0
-    descriptors = torch.from_numpy(descriptors.astype(np.float32))
-
-    if use_cuda:
-        kps = kps.cuda()
-        descriptors = descriptors.cuda()
-
-    out = feature_booster(descriptors, kps)
-    out = (out >= 0).cpu().detach().numpy()
-    descriptors = np.packbits(out, axis=1, bitorder='little')
-
-    end_time = time.time()
-    elapsed_time = end_time - start_time
-    print("feature_booster: ", elapsed_time, "sec")
-
-    return keypoints, descriptors
-
-def convert_to_cv_keypoints(keypoints):
-    cv_keypoints = []
-    for kp in keypoints:
-        x, y = kp[0], kp[1]
-        size = kp[2]
-        angle = kp[3]
-        cv_kp = cv.KeyPoint(x, y, size, angle)
-        cv_keypoints.append(cv_kp)
-    return cv_keypoints
+#dataset folder path
+color_img_file = '/home/wei/deep_feature_selection/data/small_coffee/color'
+depth_image_file = '/home/wei/deep_feature_selection/data/small_coffee/aligned_depth'
 
 if __name__ == '__main__':
-    # set CUDA
-    use_cuda = torch.cuda.is_available()
+    if not os.path.exists(color_img_file) or not os.path.exists(depth_image_file):
+        print("the file is not exist")
+        exit()
+    
+    color_files = os.listdir(color_img_file)
 
-    # set torch grad ( speed up ! )
-    torch.set_grad_enabled(False)
+    for i in range(len(color_files)-1):
+        now_sequence = color_files[i].rsplit('.', 1)[0]
+        next_sequence = color_files[i+1].rsplit('.', 1)[0]
 
-    # get orb keypoints and descriptor from orb_feature_extraction.py ( return keypoint1 & descriptor1 )
-    img1 = cv.imread( "/home/wei/deep_feature_selection/data/test_img/test4/1560100074.269736.png" )
-    image1_ = ofe.orb_features( img1 )
+        # get orb keypoints and descriptor from orb_feature_extraction.py ( return keypoint1 & descriptor1 )
+        now_img = cv.imread( os.path.join(color_img_file, now_sequence + ".png") ) 
+        next_img = cv.imread( os.path.join(color_img_file, next_sequence + ".png") )
 
-    #keypoint1, descriptor1 = image1_.feature_extract() 
-    keypoint1, descriptor1 = booster_process(img1)
+        # 
+        now_kp, now_des = fb.booster_process( now_img )
+        next_kp, next_des = fb.booster_process( next_img )
 
-    keypoint1 = convert_to_cv_keypoints(keypoint1)
+        # convert the keypoint into cv format
+        now_kp = fb.convert_to_cv_keypoints(now_kp)
+        next_kp = fb.convert_to_cv_keypoints(next_kp)
 
-    # get orb keypoints and descriptor from orb_feature_extraction.py ( return keypoint2 & descriptor2 )
-    img2 = cv.imread( "/home/wei/deep_feature_selection/data/test_img/test4/1560100074.303095.png" )
-    image2_ = ofe.orb_features( img2 )
+        # matching the feature between two  image frames
+        matcher = fm.feature_match( now_img, next_img, now_kp, next_kp, now_des, next_des ) 
+        matcher.frame_match()
 
-    #keypoint2, descriptor2 = image2_.feature_extract() 
-    keypoint2, descriptor2 = booster_process(img2)
+        # get depth of the feature points
 
-    keypoint2 = convert_to_cv_keypoints(keypoint2)
+        # get sparity of the feature points
 
-    # matching the feature between two  image frames
-    matcher = fm.feature_match( img1, img2, keypoint1, keypoint2, descriptor1, descriptor2) 
-    matcher.frame_match()
+        # get semantic info of the feature points
 
-
-    # get vector
 
     
 

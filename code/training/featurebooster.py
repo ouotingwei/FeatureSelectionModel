@@ -1,8 +1,16 @@
 from typing import List
+import sys
+import numpy as np
+import yaml
+import cv2 as cv
+import time
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
+sys.path.append('/home/wei/deep_feature_selection/code/training/extractors/orbslam2_features/lib')
+from orbslam2_features import ORBextractor
 
 
 def MLP(channels: List[int], do_bn: bool = False) -> nn.Module:
@@ -202,3 +210,82 @@ class FeatureBooster(nn.Module):
             desc = F.normalize(desc, dim=-1)
 
         return desc
+    
+
+def normalize_keypoints(keypoints, image_shape):
+    x0 = image_shape[1] / 2
+    y0 = image_shape[0] / 2
+    scale = max(image_shape) * 0.7
+    kps = np.array(keypoints)
+    kps[:, 0] = (keypoints[:, 0] - x0) / scale
+    kps[:, 1] = (keypoints[:, 1] - y0) / scale
+    return kps 
+
+def booster_process(image):
+    # set CUDA
+    use_cuda = torch.cuda.is_available()
+
+    # set torch grad ( speed up ! )
+    torch.set_grad_enabled(False)
+    
+    start_time = time.time()
+
+    # bgr -> gray
+    image = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
+
+    # orb extractor
+    feature_extractor = ORBextractor(1000, 1.2, 8)
+
+    # set FeatureBooster
+    config_file = '/home/wei/deep_feature_selection/code/training/config.yaml'
+    with open(str(config_file), 'r') as f:
+        config = yaml.load(f, Loader=yaml.FullLoader)
+    
+    # Model
+    feature_booster = FeatureBooster(config['ORB+Boost-B'])
+    if use_cuda:
+        feature_booster.cuda()
+
+    feature_booster.eval()
+
+    feature_booster.load_state_dict(torch.load('/home/wei/deep_feature_selection/code/training/ORB+Boost-B.pth'))
+
+    kps_tuples, descriptors = feature_extractor.detectAndCompute(image)
+    
+    # convert keypoints 
+    keypoints = [cv.KeyPoint(*kp) for kp in kps_tuples]
+    keypoints = np.array(
+        [[kp.pt[0], kp.pt[1], kp.size / 31, np.deg2rad(kp.angle)] for kp in keypoints], 
+        dtype=np.float32
+    )
+
+    # boosted the descriptor using trained model
+    kps = normalize_keypoints(keypoints, image.shape)
+    kps = torch.from_numpy(kps.astype(np.float32))
+    descriptors = np.unpackbits(descriptors, axis=1, bitorder='little')
+    descriptors = descriptors * 2.0 - 1.0
+    descriptors = torch.from_numpy(descriptors.astype(np.float32))
+
+    if use_cuda:
+        kps = kps.cuda()
+        descriptors = descriptors.cuda()
+
+    out = feature_booster(descriptors, kps)
+    out = (out >= 0).cpu().detach().numpy()
+    descriptors = np.packbits(out, axis=1, bitorder='little')
+
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    print("feature_booster: ", elapsed_time, "sec")
+
+    return keypoints, descriptors
+
+def convert_to_cv_keypoints(keypoints):
+    cv_keypoints = []
+    for kp in keypoints:
+        x, y = kp[0], kp[1]
+        size = kp[2]
+        angle = kp[3]
+        cv_kp = cv.KeyPoint(x, y, size, angle)
+        cv_keypoints.append(cv_kp)
+    return cv_keypoints

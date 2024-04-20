@@ -38,10 +38,13 @@ class feature_match:
         
         # Filter matches based on the Hamming distance
         good_matches = []
+        matched_2d_points = []
         for match in matches:
-            if match.distance <= 2 * min_dist:
+            if match.distance <= 5 * min_dist:
             #if match.distance <= 50:
                 good_matches.append(match)
+                matched_2d_points.append(match.queryIdx)
+                #print(match.trainIdx, match.queryIdx) #trainIdx=descriptor2
         
         print("There are ", len(good_matches), 'Points with good match')
         
@@ -52,3 +55,4 @@ class feature_match:
         plt.imshow(img3)
         plt.show()
 
+        #return matched_2d_points
