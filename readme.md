@@ -21,4 +21,3 @@ cmake -DPYTHON_LIBRARY=~/anaconda3/envs/featurebooster/lib/libpython3.8.so \
       -DPYTHON_EXECUTABLE=~/anaconda3/envs/featurebooster/bin/python3.8 ..
 make -j
 ```
-## 
