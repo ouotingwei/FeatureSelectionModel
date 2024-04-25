@@ -9,6 +9,12 @@ class yolov8_offical_semantic:
     def segmantic(self, feature_points):
         results = self.model(self.img_path)  # predict on an image
 
+    def kp_semantic(self, uv_position_of_kp):
+        pass
+    
+    def visualize(self):
+        pass
+
         
 
 class yolov8_ade20k_semantic:
@@ -18,3 +24,6 @@ class yolov8_ade20k_semantic:
 
     def segmantic(self):
         results = self.model(self.img_path)  # predict on an image
+
+    def visualize(self):
+        pass

@@ -32,8 +32,6 @@ if __name__ == '__main__':
     num_of_features = []
 
     for i in range(len(color_files)-1):
-        # input vector
-        # [[u1(float), v1(float), X1(float), Y1(float), Z1(float), MEAN_DEPTH_AROUND_KP1(float)], NUMBERS_OF_NEARBY_KP1(int), SEMANTIC_TYPE(int)],  ...]
         training_input = [] 
 
         now_sequence = color_files[i].rsplit('.', 1)[0]
@@ -71,15 +69,7 @@ if __name__ == '__main__':
         num_of_features.append( len(match_2d_point) )
 
         # insert features into training_input
-        training_input = ti.insert_uvXYZ( training_input, match_2d_point, now_kp, intrinsics, now_depth_img, now_img)
-        
-        # 2d & 3d feature points
-
-        # get depth of the feature points
-
-        # get sparity of the feature points
-
-        # get semantic info of the feature points
+        training_input = ti.insert_input( match_2d_point, now_kp, intrinsics, now_depth_img, now_img)
 
         # model
 
