@@ -16,8 +16,6 @@ conda deactivate featurebooster
 cd extractors/orbslam2_features/
 mkdir build
 cd build
-cmake -DPYTHON_LIBRARY=~/anaconda3/envs/featurebooster/lib/libpython3.8.so \
-      -DPYTHON_INCLUDE_DIR=~/anaconda3/envs/featurebooster/include/python3.8 \
-      -DPYTHON_EXECUTABLE=~/anaconda3/envs/featurebooster/bin/python3.8 ..
+cmake -DPYTHON_LIBRARY=~/anaconda3/envs/featurebooster/lib/libpython3.8.so \-DPYTHON_INCLUDE_DIR=~/anaconda3/envs/featurebooster/include/python3.8 \-DPYTHON_EXECUTABLE=~/anaconda3/envs/featurebooster/bin/python3.8 ..
 make -j
 ```

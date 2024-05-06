@@ -9,7 +9,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-sys.path.append('code/training/extractors/orbslam2_features/lib')
+sys.path.append('/home/wei/deep_feature_selection/code/training/extractors/orbslam2_features/lib')
 from orbslam2_features import ORBextractor
 
 
@@ -237,7 +237,7 @@ def booster_process(image):
     feature_extractor = ORBextractor(1000, 1.2, 8)
 
     # set FeatureBooster
-    config_file = 'code/training/config.yaml'
+    config_file = '/home/wei/deep_feature_selection/code/training/config.yaml'
     with open(str(config_file), 'r') as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
     
@@ -248,7 +248,7 @@ def booster_process(image):
 
     feature_booster.eval()
 
-    feature_booster.load_state_dict(torch.load('code/training/weight/ORB+Boost-B.pth'))
+    feature_booster.load_state_dict(torch.load('/home/wei/deep_feature_selection/code/training/weight/ORB+Boost-B.pth'))
 
     kps_tuples, descriptors = feature_extractor.detectAndCompute(image)
     

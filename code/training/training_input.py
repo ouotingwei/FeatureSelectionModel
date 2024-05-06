@@ -1,6 +1,6 @@
 import numpy as np
-import cv2 as cv
-import yaml
+from scipy.interpolate import interp1d
+import os
 
 import semantic as semantic
 
@@ -29,8 +29,8 @@ def insert_input( match_2d_point, kp, intrinsic, depth_img, rgb_img ):
 
         num_of_nearby = get_numbers_of_nearby_kp( [u, v], kp, match_2d_point )
 
-        u = u / w
-        v = v / h
+        # u = u / w
+        # v = v / h
 
         training_input.append([ [u, v], [X, Y, Z], [depth_diff_around_kp], [num_of_nearby] ])
 
@@ -82,4 +82,73 @@ def get_numbers_of_nearby_kp(kp_position, kp, match_2d_point):
     cnt -= 1
     return max(0, cnt) 
 
-# get semantic info of the feature points
+def find_gt_by_interpolation(sequence, gt_data):
+    closet_index = None
+    for i in range(len(gt_data)):
+        if gt_data[i][0] > sequence:
+            closet_index = i
+            break
+
+    big_index = closet_index
+    small_index = closet_index - 1
+    t_ = [gt_data[small_index][0], gt_data[big_index][0]]
+    x_ = [gt_data[small_index][1], gt_data[big_index][1]]
+    y_ = [gt_data[small_index][2], gt_data[big_index][2]]
+    quaz_ = [gt_data[small_index][6], gt_data[big_index][6]]
+    quaw_ = [gt_data[small_index][7], gt_data[big_index][7]]
+
+    interp_x = interp1d(t_, x_, kind='linear')
+    now_x = interp_x(sequence)
+
+    interp_y = interp1d(t_, y_, kind='linear')
+    now_y = interp_y(sequence)
+
+    interp_quaz = interp1d(t_, quaz_, kind='linear')
+    now_quaz = interp_quaz(sequence)
+
+    interp_quaw = interp1d(t_, quaw_, kind='linear')
+    now_quaw = interp_quaw(sequence)
+
+    return [now_x, now_y, 0.0, 0.0, 0.0, now_quaz, now_quaw]
+
+def get_data_list(color_file_path, depth_file_path, gt_file_path):
+    '''
+    input : color_file, depth_file, gt_file
+    output : color_path_list, depth_path_list, gt_data_list
+    '''
+    print("Loading data ...")
+
+    color_files = sorted(os.listdir(color_file_path), key=lambda x: float(os.path.splitext(x)[0]))
+    depth_files = sorted(os.listdir(depth_file_path), key=lambda x: float(os.path.splitext(x)[0]))
+    sequence = color_files
+
+    gt_data = []
+    with open(gt_file_path, 'r') as file:
+        for line in file:
+            if line.startswith('#'):
+                continue
+            parts = line.strip().split(' ')
+            time = float(parts[0])
+            gt_entry = (time, *map(float, parts[1:]))
+            gt_data.append(gt_entry)
+
+    color_img_list = []
+    depth_img_list = []
+    gt_data_list = []
+    sequence_list = []
+
+    for i in range(len(color_files)):
+        now_img = color_files[i].rsplit('.', 1)[0]
+        now_depth = depth_files[i].rsplit('.', 1)[0]
+
+        now_img_path = os.path.join(color_file_path, now_img + ".png")
+        now_depth_path = os.path.join(depth_file_path, now_depth + ".png")
+
+        color_img_list.append(now_img_path)
+        depth_img_list.append(now_depth_path)
+
+        sequence = float(now_img)
+        sequence_list.append(sequence)
+        gt_data_list.append( find_gt_by_interpolation(sequence, gt_data) )
+
+    return color_img_list, depth_img_list, gt_data_list, sequence_list 
