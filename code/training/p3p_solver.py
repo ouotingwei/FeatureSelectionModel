@@ -21,4 +21,4 @@ class p3p_solver:
         return rotation_vector, transition_vector
  
     def p3p_select_point(self):
-        
+        pass
