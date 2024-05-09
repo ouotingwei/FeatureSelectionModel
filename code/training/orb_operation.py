@@ -87,19 +87,19 @@ class feature_match:
         good_matches = []
         matched_2d_points = []
         for match in matches:
-            if match.distance <= 10 * min_dist:
+            if match.distance <= 20 * min_dist:
             #if match.distance <= 50:
-                good_matches.append(match)
+                good_matches.append(match) 
                 matched_2d_points.append(match.trainIdx)
                 #print(match.trainIdx, match.queryIdx) #trainIdx=descriptor2
         
         print("There are ", len(good_matches), 'Points with good match')
 
         # Draw only good matches
-        img3 = cv.drawMatches(np.uint8(self.img1), self.keypoint1, np.uint8(self.img2), self.keypoint2, good_matches, None, flags=cv.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
+        #img3 = cv.drawMatches(np.uint8(self.img1), self.keypoint1, np.uint8(self.img2), self.keypoint2, good_matches, None, flags=cv.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
         
         # Display the result
-        plt.imshow(img3)
-        plt.show()
+        #plt.imshow(img3)
+        #plt.show()
 
         return matched_2d_points

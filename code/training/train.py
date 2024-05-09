@@ -29,8 +29,8 @@ def MLP(channels: List[int], do_bn: bool = False) -> nn.Module:
     return nn.Sequential(*layers)
 
 if __name__ == '__main__':
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = BertModel.from_pretrained('bert-base-uncased')
+    #device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    #model = BertModel.from_pretrained('bert-base-uncased')
 
     if not os.path.exists(color_img_file) or not os.path.exists(depth_image_file):
         print("the file is not exist")
@@ -42,6 +42,7 @@ if __name__ == '__main__':
 
     for i in range(len(color_img_list)-1):
         training_input = [] 
+        print(i)
 
         # get orb keypoints and descriptor from orb_feature_extraction.py ( return keypoint1 & descriptor1 )
         now_img = cv.imread( color_img_list[i] ) 

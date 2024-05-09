@@ -29,12 +29,12 @@ def insert_input( match_2d_point, kp, intrinsic, depth_img, rgb_img ):
 
         num_of_nearby = get_numbers_of_nearby_kp( [u, v], kp, match_2d_point )
 
-        # u = u / w
-        # v = v / h
+        u = u / w
+        v = v / h
 
         training_input.append([ [u, v], [X, Y, Z], [depth_diff_around_kp], [num_of_nearby] ])
 
-        print([ [u, v], [X, Y, Z], [depth_diff_around_kp], [num_of_nearby] ])
+        #print([ [u, v], [X, Y, Z], [depth_diff_around_kp], [num_of_nearby] ])
 
     return training_input
 
