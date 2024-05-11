@@ -16,18 +16,6 @@ depth_image_file = '/home/wei/deep_feature_selection/data/small_coffee/aligned_d
 gt_file = '/home/wei/deep_feature_selection/data/small_coffee/groundtruth.txt'
 camera_intrinsics = [4.2214370727539062e+02, 4.2700833129882812e+02, 4.2214370727539062e+02, 2.4522090148925781e+02] # from sensors.yaml
 
-def MLP(channels: List[int], do_bn: bool = False) -> nn.Module:
-    """ Multi-layer perceptron """
-    n = len(channels)
-    layers = []
-    for i in range(1, n):
-        layers.append(nn.Linear(channels[i - 1], channels[i]))
-        if i < (n-1):
-            if do_bn:
-                layers.append(nn.BatchNorm1d(channels[i]))
-            layers.append(nn.ReLU())
-    return nn.Sequential(*layers)
-
 if __name__ == '__main__':
     #device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     #model = BertModel.from_pretrained('bert-base-uncased')
@@ -36,13 +24,13 @@ if __name__ == '__main__':
         print("the file is not exist")
         exit()
 
-    color_img_list, depth_img_list, gt_data_list, sequence_list =  TRAINING_INPUT.get_data_list(color_img_file, depth_image_file, gt_file)
+    data_preprocess = TRAINING_INPUT.data_preprocessing()
+    color_img_list, depth_img_list, gt_data_list, sequence_list =  data_preprocess.get_data_list(color_img_file, depth_image_file, gt_file)
 
     num_of_features = []
 
     for i in range(len(color_img_list)-1):
         training_input = [] 
-        print(i)
 
         # get orb keypoints and descriptor from orb_feature_extraction.py ( return keypoint1 & descriptor1 )
         now_img = cv.imread( color_img_list[i] ) 
@@ -63,22 +51,18 @@ if __name__ == '__main__':
         #next_kp, next_des = next_image_.feature_extract() 
 
         # matching the feature between two  image frames
-        matcher = ORB.feature_match( now_img, next_img, now_kp, next_kp, now_des, next_des ) 
-        match_2d_point = matcher.frame_match()
-        num_of_features.append( len(match_2d_point) )
+        matcher_ = ORB.feature_match( now_img, next_img, now_kp, next_kp, now_des, next_des ) 
+        queryIdx, trainIdx = matcher_.frame_match()
+        num_of_features.append( len(trainIdx) )
 
         # insert features into training_input
-        training_input = TRAINING_INPUT.insert_input( match_2d_point, now_kp, camera_intrinsics, now_depth_img, now_img )
-
+        input_ = TRAINING_INPUT.set_training_input(queryIdx, trainIdx, now_kp, next_kp, camera_intrinsics, now_depth_img, now_img)
+        training_input = input_.insert_input()
         # model
         # input : n feature array in one serquence
         # output : n scores of each feature array
 
-
-        # Solve PnP 
-        # input : 
-
-        # loss function
+        
 
     print("min : ", min(num_of_features))
     
