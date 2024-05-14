@@ -2,10 +2,12 @@ Author 1 : Tingweiou @ NYCU M.S in Robotics
 
 ## Training
 - set up the env from -> https://github.com/SJTU-ViSYS/FeatureBooster.git
+
 - activate the env
 ```
 conda activate featurebooster
 ```
+
 - shut down the env
 ```
 conda deactivate featurebooster

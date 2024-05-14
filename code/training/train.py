@@ -9,6 +9,7 @@ import torch.nn as nn
 import featurebooster as FEATUREBOOSTER
 import training_input as TRAINING_INPUT
 import orb_operation as ORB
+import generate_label as GENERATE_LABEL
 
 #dataset folder path( change to your own path )
 color_img_file = '/home/wei/deep_feature_selection/data/small_coffee/color'
@@ -16,7 +17,11 @@ depth_image_file = '/home/wei/deep_feature_selection/data/small_coffee/aligned_d
 gt_file = '/home/wei/deep_feature_selection/data/small_coffee/groundtruth.txt'
 camera_intrinsics = [4.2214370727539062e+02, 4.2700833129882812e+02, 4.2214370727539062e+02, 2.4522090148925781e+02] # from sensors.yaml
 
+def fing_inliers():
+    pass
+
 if __name__ == '__main__':
+    print(cv.__version__)
     #device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     #model = BertModel.from_pretrained('bert-base-uncased')
 
@@ -58,11 +63,13 @@ if __name__ == '__main__':
         # insert features into training_input
         input_ = TRAINING_INPUT.set_training_input(queryIdx, trainIdx, now_kp, next_kp, camera_intrinsics, now_depth_img, now_img)
         training_input = input_.insert_input()
+
+        label_ = GENERATE_LABEL.generate_label(training_input, None, None)
+        label = label_.get_label()
+
         # model
         # input : n feature array in one serquence
         # output : n scores of each feature array
-
-        
 
     print("min : ", min(num_of_features))
     

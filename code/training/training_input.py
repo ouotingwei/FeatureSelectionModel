@@ -33,8 +33,17 @@ class set_training_input:
             print( [ uv, XYZ, MD, NB ] )
 
             training_input.append( [uv,XYZ,MD,NB] )
+        
+        print("training_input quantity : ", len(training_input) )
+        
+        ok_training_input = []
+        for i in range( len(self.nextIdx) ):
+            if training_input[i][1] != [0.0, 0.0, 0.0] and training_input[i][1] != [0.0, -0.0, 0.0]:
+                ok_training_input.append( training_input[i] )
 
-        return training_input
+        print("ok_training_input quantity : ", len(ok_training_input) )
+
+        return ok_training_input
 
     def uv_input( self, idx ):
         '''

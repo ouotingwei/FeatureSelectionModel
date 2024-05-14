@@ -70,38 +70,24 @@ class feature_match:
         
         # Match descriptors
         matches = bf.match(self.descriptor1, self.descriptor2)
-
-        min_dist = 10000
-        max_dist = 0
-
-        for match in matches:
-            dist = match.distance
-            if dist < min_dist and dist != 0:
-                min_dist = dist
-            if dist > max_dist:
-                max_dist = dist
-
-        print("Found minimum distance", min_dist, max_dist)
         
         # Filter matches based on the Hamming distance
         good_matches = []
         queryIdx = []
         trainIdx = []
         for match in matches:
-            if match.distance <= 20 * min_dist:
-            #if match.distance <= 50:
+            if match.distance <= 45:
                 good_matches.append(match) 
                 queryIdx.append(match.queryIdx)
                 trainIdx.append(match.trainIdx)
-                #print(match.trainIdx, match.queryIdx) #trainIdx=descriptor2
 
         print("There are ", len(good_matches), 'Points with good match')
 
         # Draw only good matches
-        #img3 = cv.drawMatches(np.uint8(self.img1), self.keypoint1, np.uint8(self.img2), self.keypoint2, good_matches, None, flags=cv.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
+        img3 = cv.drawMatches(np.uint8(self.img1), self.keypoint1, np.uint8(self.img2), self.keypoint2, good_matches, None, flags=cv.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
         
         # Display the result
-        #plt.imshow(img3)
-        #plt.show()
+        plt.imshow(img3)
+        plt.show()
 
         return queryIdx, trainIdx
