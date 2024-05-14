@@ -2,58 +2,80 @@ import numpy as np
 import time
 import cv2 as cv
 from itertools import combinations
-
-'''
-思路：
-1. 隨機取四個點計算EPnP，做N次
-2. 將所有3D特徵點根據第一步計算出的T投影成2D座標後計算誤差
-3. 取誤差最小的那組T，並保留50%內點
-4. 賦予其正負類別的Label
-'''
+from tqdm import tqdm
+from numba import jit
 
 class generate_label:
     def __init__(self, input_array, img_size, camera_intrinsic):
         self.input_array = input_array
-        self.minimum_error_T = None
-        self.keep_ratio = 0.2
-        self.error = float('inf')
+        self.camera_matrix = np.array([[camera_intrinsic[0], 0, camera_intrinsic[2]], [0, camera_intrinsic[1], camera_intrinsic[3]], [0, 0, 1]], dtype=float)
+        self.h = img_size[0]
+        self.w = img_size[1]
+        self.keep_ratio = 0.2   # keep 20% key points
 
+    @jit
     def get_label(self):
         input_length = len(self.input_array)
-
-        combination_sequence = [i for i in range(1, input_length + 1)]
-
+        combination_sequence = np.arange(0, input_length )
+        # combination of N Choose 3, N is the number of key points
         combinations_list = list(combinations(combination_sequence, 3))
+        # numpy -> cv.UMat
+        camera_matrix = cv.UMat(self.camera_matrix)
 
-        print(len(combinations_list))
+        R_most_accurate = None
+        T_most_accurate = None
+        minimum_error = float('inf')
 
-        for i in range(1):
-            point_1 = combinations_list[i][0]
-            point_2 = combinations_list[i][1]
-            point_3 = combinations_list[i][2]
+        for combination in tqdm(combinations_list, desc="Generating the labels..."):
+            point_1 = combination[0]
+            point_2 = combination[1]
+            point_3 = combination[2]
+
             pair_2d = [self.input_array[point_1][0], self.input_array[point_2][0], self.input_array[point_3][0]]
             pair_3d = [self.input_array[point_1][1], self.input_array[point_2][1], self.input_array[point_3][1]]
 
-            # solve P3P -> T
+            # object_point -> NumPy -> UMat
+            image_points_np = np.ascontiguousarray(np.array(pair_2d, dtype=np.float32))
+            image_points_um = cv.UMat(image_points_np)
+            object_points_np = np.ascontiguousarray(np.array(pair_3d, dtype=np.float32))
+            object_points_um = cv.UMat(object_points_np)
 
-            # projected the 3d point with T
+            # solve P3P -> T ( up to four solutions but I don't know why )
+            retval, R, T = cv.solveP3P(object_points_um, image_points_um, camera_matrix, None, flags= cv.SOLVEPNP_P3P)
 
-            # Calcultate the error 
-
-            # if error < self.error -> self.error = error && save T
+            # projected the 3d point with R, T and find the minimum error T
+            for i in range(retval):
+                R_matrix, _ = cv.Rodrigues(R[i])
+                T_matrix = np.hstack((R_matrix, T[i]))
+                error = self.calculate_error_by_projection(T_matrix)
+                
+                # find the minimum error T&R
+                if error < minimum_error:
+                    minimum_error = error
+                    R_most_accurate = R[i]
+                    T_most_accurate = T[i]
             
-        
+        print(minimum_error)
         # set inlier && outlier label by T
+
 
         return None
 
+    def calculate_error_by_projection(self, T):
+            error = 0.0
+            K = self.camera_matrix
+            # convenience for all points
+            for point in range(len(self.input_array)):
+                point_3d_homogeneous = np.array([self.input_array[point][1][0], self.input_array[point][1][1], self.input_array[point][1][2], 1], dtype=float)
+                uv = (( K @ T ) @ point_3d_homogeneous )
+                project_u = uv[0]/uv[2]
+                project_v = uv[1]/uv[2]
+                error += (project_u - self.input_array[point][0][0]) ** 2 + (project_v - self.input_array[point][0][1]) ** 2
 
-    def pnp_solver(self, pair_2d, pair_3d):
-        _,R,T=cv.solvePnP(objp,corners,mtx,dist)
+            return error
 
-    def set_label(self, error_list):
+
+    def set_label(self):
         label = []  
-        for i in range( len(error_list) ):
-            pass
 
         return label

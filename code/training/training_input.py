@@ -1,4 +1,5 @@
 import numpy as np
+from tqdm import tqdm
 from scipy.interpolate import interp1d
 import os
 
@@ -30,18 +31,18 @@ class set_training_input:
             MD = self.get_mean_depth_around_kp_input(i)
             NB = self.get_numbers_of_nearby_kp(i)
 
-            print( [ uv, XYZ, MD, NB ] )
+            #print( [ uv, XYZ, MD, NB ] )
 
             training_input.append( [uv,XYZ,MD,NB] )
         
-        print("training_input quantity : ", len(training_input) )
+        #print("training_input quantity : ", len(training_input) )
         
         ok_training_input = []
         for i in range( len(self.nextIdx) ):
             if training_input[i][1] != [0.0, 0.0, 0.0] and training_input[i][1] != [0.0, -0.0, 0.0]:
                 ok_training_input.append( training_input[i] )
 
-        print("ok_training_input quantity : ", len(ok_training_input) )
+        print("number of key points : ", len(ok_training_input) )
 
         return ok_training_input
 
@@ -52,7 +53,8 @@ class set_training_input:
         u = self.next_kp[ self.nextIdx[idx] ].pt[0] 
         v = self.next_kp[ self.nextIdx[idx] ].pt[1]
 
-        return [u/self.w, v/self.h]
+        #return [u/self.w, v/self.h]
+        return [u, v]
 
     def XYZ_input( self, idx ):
         '''
@@ -134,7 +136,6 @@ class data_preprocessing:
         input : color_file, depth_file, gt_file
         output : color_path_list, depth_path_list, gt_data_list
         '''
-        print("Loading data ...")
 
         color_files = sorted(os.listdir(color_file_path), key=lambda x: float(os.path.splitext(x)[0]))
         depth_files = sorted(os.listdir(depth_file_path), key=lambda x: float(os.path.splitext(x)[0]))
@@ -155,7 +156,7 @@ class data_preprocessing:
         gt_data_list = []
         sequence_list = []
 
-        for i in range(len(color_files)):
+        for i in tqdm(range(len(color_files)), "loading data ..."):
             now_img = color_files[i].rsplit('.', 1)[0]
             now_depth = depth_files[i].rsplit('.', 1)[0]
 

@@ -2,6 +2,7 @@ import os
 import cv2 as cv
 import matplotlib.pyplot as plt
 from typing import List
+from tqdm import tqdm
 from transformers import BertModel
 import torch
 import torch.nn as nn
@@ -15,13 +16,9 @@ import generate_label as GENERATE_LABEL
 color_img_file = '/home/wei/deep_feature_selection/data/small_coffee/color'
 depth_image_file = '/home/wei/deep_feature_selection/data/small_coffee/aligned_depth'
 gt_file = '/home/wei/deep_feature_selection/data/small_coffee/groundtruth.txt'
-camera_intrinsics = [4.2214370727539062e+02, 4.2700833129882812e+02, 4.2214370727539062e+02, 2.4522090148925781e+02] # from sensors.yaml
-
-def fing_inliers():
-    pass
+camera_intrinsics = [4.2214370727539062e+02, 4.2700833129882812e+02, 4.2214370727539062e+02, 2.4522090148925781e+02] # from sensors.yaml ???
 
 if __name__ == '__main__':
-    print(cv.__version__)
     #device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     #model = BertModel.from_pretrained('bert-base-uncased')
 
@@ -34,7 +31,12 @@ if __name__ == '__main__':
 
     num_of_features = []
 
+    training_cnt = 1
+
     for i in range(len(color_img_list)-1):
+        print(" epoch : ", training_cnt)
+        training_cnt += 1
+
         training_input = [] 
 
         # get orb keypoints and descriptor from orb_feature_extraction.py ( return keypoint1 & descriptor1 )
@@ -64,12 +66,13 @@ if __name__ == '__main__':
         input_ = TRAINING_INPUT.set_training_input(queryIdx, trainIdx, now_kp, next_kp, camera_intrinsics, now_depth_img, now_img)
         training_input = input_.insert_input()
 
-        label_ = GENERATE_LABEL.generate_label(training_input, None, None)
+        label_ = GENERATE_LABEL.generate_label(training_input, now_img.shape, camera_intrinsics)
         label = label_.get_label()
 
         # model
         # input : n feature array in one serquence
         # output : n scores of each feature array
+
 
     print("min : ", min(num_of_features))
     

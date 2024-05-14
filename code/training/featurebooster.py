@@ -276,7 +276,7 @@ def booster_process(image):
 
     end_time = time.time()
     elapsed_time = end_time - start_time
-    print("feature_booster: ", elapsed_time, "sec")
+    #print("feature_booster: ", elapsed_time, "sec")
 
     return keypoints, descriptors
 

@@ -20,10 +20,11 @@ class orb_features:
             print("\033[93m[Feature Extract Warning] Not Enough Number of keypoints : {}\033[0m".format(num_keypoints))
  
         else:
-            print("\033[92m[Feature Extract] Number of keypoints: {}\033[0m".format(num_keypoints))
+            #print("\033[92m[Feature Extract] Number of keypoints: {}\033[0m".format(num_keypoints))
+            pass
     
     def feature_extract(self):
-        start_time = time.time()
+        #start_time = time.time()
 
         # Initiate ORB detector
         #orb = cv.ORB_create(nfeatures=500)
@@ -34,10 +35,10 @@ class orb_features:
         # compute the descriptors with ORB
         self.keypoint, self.descriptor = self.feature_extractor.detectAndCompute(self.img)
 
-        end_time = time.time()
+        #end_time = time.time()
 
-        orb_feature_extract_time = end_time - start_time
-        print("[Feature Extraction] time: {:.6f} seconds".format(orb_feature_extract_time))
+        #orb_feature_extract_time = end_time - start_time
+        #print("[Feature Extraction] time: {:.6f} seconds".format(orb_feature_extract_time))
 
         self.feature_warning()
 
@@ -81,13 +82,13 @@ class feature_match:
                 queryIdx.append(match.queryIdx)
                 trainIdx.append(match.trainIdx)
 
-        print("There are ", len(good_matches), 'Points with good match')
+        #print("There are ", len(good_matches), 'Points with good match')
 
         # Draw only good matches
-        img3 = cv.drawMatches(np.uint8(self.img1), self.keypoint1, np.uint8(self.img2), self.keypoint2, good_matches, None, flags=cv.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
+        #img3 = cv.drawMatches(np.uint8(self.img1), self.keypoint1, np.uint8(self.img2), self.keypoint2, good_matches, None, flags=cv.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
         
         # Display the result
-        plt.imshow(img3)
-        plt.show()
+        #plt.imshow(img3)
+        #plt.show()
 
         return queryIdx, trainIdx
