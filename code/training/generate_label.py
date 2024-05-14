@@ -60,19 +60,20 @@ class generate_label:
 
 
         return None
-
+    @jit
     def calculate_error_by_projection(self, T):
-            error = 0.0
-            K = self.camera_matrix
-            # convenience for all points
-            for point in range(len(self.input_array)):
-                point_3d_homogeneous = np.array([self.input_array[point][1][0], self.input_array[point][1][1], self.input_array[point][1][2], 1], dtype=float)
-                uv = (( K @ T ) @ point_3d_homogeneous )
-                project_u = uv[0]/uv[2]
-                project_v = uv[1]/uv[2]
-                error += (project_u - self.input_array[point][0][0]) ** 2 + (project_v - self.input_array[point][0][1]) ** 2
+        K = self.camera_matrix
+        point_3d_homogeneous = np.array([[point[1][0], point[1][1], point[1][2], 1] for point in self.input_array], dtype=float)
+        uv = np.dot(np.dot(K, T), point_3d_homogeneous.T)
+        project_u = uv[0] / uv[2]
+        project_v = uv[1] / uv[2]
+        error = np.sum((project_u - np.array([point[0][0] for point in self.input_array])) ** 2 + (project_v - np.array([point[0][1] for point in self.input_array])) ** 2)
+        return error
 
-            return error
+
+
+
+
 
 
     def set_label(self):
