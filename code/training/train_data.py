@@ -34,7 +34,7 @@ if __name__ == '__main__':
     training_cnt = 1
 
     for i in range(len(color_img_list)-1):
-        print(" epoch : ", training_cnt)
+        print(" [-] img : ", training_cnt)
         training_cnt += 1
 
         training_input = [] 
@@ -68,10 +68,6 @@ if __name__ == '__main__':
 
         label_ = GENERATE_LABEL.generate_label(training_input, now_img.shape, camera_intrinsics)
         label = label_.get_label()
-
-        # model
-        # input : n feature array in one serquence
-        # output : n scores of each feature array
 
 
     print("min : ", min(num_of_features))
