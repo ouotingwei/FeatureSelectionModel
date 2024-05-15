@@ -16,14 +16,14 @@ class generate_label:
         self.w = img_size[1]
         self.keep_ratio = 0.2   # keep 20% key points
         self.iterations = 5000
-        self.error_threshold = 5.991
+        self.error_threshold = 2
 
     def get_label(self):
         R_most_accurate = None
         T_most_accurate = None
         minimum_error = float('inf')
         cnt = 0
-        for iter in tqdm(range(self.iterations), desc="Generating the labels..."):
+        for iter in tqdm(range(self.iterations), desc="Generating label ..."):
             # calculate the rough T
             point_1 = random.randint(0, self.num_of_points)
             point_2 = random.randint(0, self.num_of_points)
@@ -44,7 +44,7 @@ class generate_label:
             num_of_inlier, inlier_2d, inlier_3d = self.find_inlier( T_rough_matrix )
 
             # find T_accurate with inlier
-            if num_of_inlier >=4:
+            if num_of_inlier >= 4:
                 _, R_acc, T_acc = cv.solvePnP(pair_3d, pair_2d, self.camera_matrix, None, None, None, flags= cv.SOLVEPNP_EPNP)
                 R_acc, _ = cv.Rodrigues(R_acc)
                 T_acc_matrix = np.hstack((R_acc, T_acc))
@@ -57,10 +57,13 @@ class generate_label:
                     R_most_accurate = R_acc
                     T_most_accurate = T_acc
             
-        print(minimum_error, cnt)
+        print("Sum of error : ", minimum_error )
+        T_most_acc_matrix = np.hstack((R_most_accurate, T_most_accurate))
+        print("T: ", T_most_acc_matrix )
         # set inlier && outlier label by T
+        error_list = self.set_label(T_most_acc_matrix)
 
-        return None
+        return error_list
 
     def find_inlier(self, T):
         inlier_3d = []
@@ -71,8 +74,8 @@ class generate_label:
             uv = ((K @ T) @ point_3d_homogeneous.T)
             project_u = uv[0] / uv[2]
             project_v = uv[1] / uv[2]
-            error = (project_u - point[0][0]) ** 2 + (project_v - point[0][1]) ** 2
-            if error < self.error_threshold ** 2:
+            error = math.sqrt( (project_u - point[0][0]) ** 2 + (project_v - point[0][1]) ** 2 )
+            if error < self.error_threshold:
                 inlier_2d.append([point[0][0], point[0][1]])
                 inlier_3d.append([point[1][0], point[1][1], point[1][2]])
 
@@ -87,7 +90,14 @@ class generate_label:
         error = np.sum((project_u - np.array([point[0][0] for point in self.input_array])) ** 2 + (project_v - np.array([point[0][1] for point in self.input_array])) ** 2)
         return error
     
-    def set_label(self):
-        label = []  
-
-        return label
+    def set_label(self, T):
+        K = self.camera_matrix
+        error_list = []
+        for point in self.input_array:
+            point_3d_homogeneous = np.array([point[1][0], point[1][1], point[1][2], 1])
+            uv = ((K @ T) @ point_3d_homogeneous.T)
+            project_u = uv[0] / uv[2]
+            project_v = uv[1] / uv[2]
+            error_list.append( math.sqrt( (project_u - point[0][0]) ** 2 + (project_v - point[0][1]) ** 2 ) )
+    
+        return error_list

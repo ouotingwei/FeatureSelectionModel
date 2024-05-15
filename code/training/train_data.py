@@ -1,6 +1,7 @@
 import os
 import cv2 as cv
 import matplotlib.pyplot as plt
+import numpy as np
 from typing import List
 from tqdm import tqdm
 from transformers import BertModel
@@ -17,6 +18,8 @@ color_img_file = '/home/wei/deep_feature_selection/data/small_coffee/color'
 depth_image_file = '/home/wei/deep_feature_selection/data/small_coffee/aligned_depth'
 gt_file = '/home/wei/deep_feature_selection/data/small_coffee/groundtruth.txt'
 camera_intrinsics = [4.2214370727539062e+02, 4.2700833129882812e+02, 4.2214370727539062e+02, 2.4522090148925781e+02] # from sensors.yaml ???
+
+output_folder = '/home/wei/deep_feature_selection/training_data/small_coffee'
 
 if __name__ == '__main__':
     #device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -67,8 +70,20 @@ if __name__ == '__main__':
         training_input = input_.insert_input()
 
         label_ = GENERATE_LABEL.generate_label(training_input, now_img.shape, camera_intrinsics)
-        label = label_.get_label()
+        error_list = label_.get_label()
 
+        # save training input and labels
+        folder_name = output_folder + '/' + str(i)
+        if not os.path.exists(folder_name):
+            os.makedirs(folder_name)
+
+        training_input = np.array(training_input)
+        print(training_input[0])
+        error_list = np.array(error_list)
+
+        np.save(folder_name + '/' + 'input.npy', training_input)
+        np.save(folder_name + '/' + 'error.npy', error_list)
+            
 
     print("min : ", min(num_of_features))
     
