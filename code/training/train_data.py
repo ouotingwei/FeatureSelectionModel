@@ -79,9 +79,11 @@ if __name__ == '__main__':
 
         training_uv = [np.array(data_col[0]) for data_col in training_input]
         training_XYZ = [np.array(data_col[1]) for data_col in training_input]
-        training_diversity2d = [np.array(data_col[2]) for data_col in training_input]
-        training_diversity3d = [np.array(data_col[3]) for data_col in training_input]
+        training_diversity3d = [np.array(data_col[2]) for data_col in training_input]
+        training_diversity2d = [np.array(data_col[3]) for data_col in training_input]
         error_list = np.array(error_list)
+        error_list = error_list.reshape(-1, 1)
+
 
         np.save(folder_name + '/' + 'input_uv.npy', training_uv)
         np.save(folder_name + '/' + 'input_XYZ.npy', training_XYZ)
