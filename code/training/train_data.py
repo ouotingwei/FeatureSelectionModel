@@ -77,11 +77,16 @@ if __name__ == '__main__':
         if not os.path.exists(folder_name):
             os.makedirs(folder_name)
 
-        training_input = np.array(training_input)
-        print(training_input[0])
+        training_uv = [np.array(data_col[0]) for data_col in training_input]
+        training_XYZ = [np.array(data_col[1]) for data_col in training_input]
+        training_diversity2d = [np.array(data_col[2]) for data_col in training_input]
+        training_diversity3d = [np.array(data_col[3]) for data_col in training_input]
         error_list = np.array(error_list)
 
-        np.save(folder_name + '/' + 'input.npy', training_input)
+        np.save(folder_name + '/' + 'input_uv.npy', training_uv)
+        np.save(folder_name + '/' + 'input_XYZ.npy', training_XYZ)
+        np.save(folder_name + '/' + 'input_diversity2d.npy', training_diversity2d)
+        np.save(folder_name + '/' + 'input_diversity3d.npy', training_diversity3d)
         np.save(folder_name + '/' + 'error.npy', error_list)
             
 
