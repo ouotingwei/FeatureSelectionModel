@@ -1,7 +1,8 @@
 import numpy as np
 import time
 import cv2 as cv
-from itertools import combinations
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 from tqdm import tqdm
 import random
 from numba import jit
@@ -14,9 +15,8 @@ class generate_label:
         self.camera_matrix = np.array([[camera_intrinsic[0], 0, camera_intrinsic[2]], [0, camera_intrinsic[1], camera_intrinsic[3]], [0, 0, 1]], dtype=float)
         self.h = img_size[0]
         self.w = img_size[1]
-        self.keep_ratio = 0.2   # keep 20% key points
-        self.iterations = 5000
-        self.error_threshold = 2
+        self.iterations = 1000
+        self.error_threshold = 5.991
 
     def get_label(self):
         R_most_accurate = None
@@ -45,7 +45,7 @@ class generate_label:
 
             # find T_accurate with inlier
             if num_of_inlier >= 4:
-                _, R_acc, T_acc = cv.solvePnP(pair_3d, pair_2d, self.camera_matrix, None, None, None, flags= cv.SOLVEPNP_EPNP)
+                _, R_acc, T_acc = cv.solvePnP(np.array(inlier_3d), np.array(inlier_2d), self.camera_matrix, None, None, None, flags= cv.SOLVEPNP_EPNP)
                 R_acc, _ = cv.Rodrigues(R_acc)
                 T_acc_matrix = np.hstack((R_acc, T_acc))
                 error = self.calculate_error_by_projection(T_acc_matrix)
@@ -57,13 +57,13 @@ class generate_label:
                     R_most_accurate = R_acc
                     T_most_accurate = T_acc
             
-        print("Sum of error : ", minimum_error )
+        print("Sum of error : ", minimum_error, cnt )
         T_most_acc_matrix = np.hstack((R_most_accurate, T_most_accurate))
-        print("T: ", T_most_acc_matrix )
+        #print("T: ", T_most_acc_matrix )
         # set inlier && outlier label by T
         error_list = self.set_label(T_most_acc_matrix)
 
-        return error_list
+        return minimum_error, error_list
 
     def find_inlier(self, T):
         inlier_3d = []
@@ -74,7 +74,7 @@ class generate_label:
             uv = ((K @ T) @ point_3d_homogeneous.T)
             project_u = uv[0] / uv[2]
             project_v = uv[1] / uv[2]
-            error = math.sqrt( (project_u - point[0][0]) ** 2 + (project_v - point[0][1]) ** 2 )
+            error = (project_u - point[0][0]) ** 2 + (project_v - point[0][1]) ** 2
             if error < self.error_threshold:
                 inlier_2d.append([point[0][0], point[0][1]])
                 inlier_3d.append([point[1][0], point[1][1], point[1][2]])
@@ -88,6 +88,7 @@ class generate_label:
         project_u = uv[0] / uv[2]
         project_v = uv[1] / uv[2]
         error = np.sum((project_u - np.array([point[0][0] for point in self.input_array])) ** 2 + (project_v - np.array([point[0][1] for point in self.input_array])) ** 2)
+        
         return error
     
     def set_label(self, T):
@@ -99,5 +100,50 @@ class generate_label:
             project_u = uv[0] / uv[2]
             project_v = uv[1] / uv[2]
             error_list.append( math.sqrt( (project_u - point[0][0]) ** 2 + (project_v - point[0][1]) ** 2 ) )
-    
+        
+        zero_error_cnt = 0
+        depth_list = []
+        x_list = []
+        y_list = []
+        out_depth = []
+        x_out = []
+        y_out = []
+        for i in range(len(error_list)):
+            if error_list[i] <= 0.5:
+                zero_error_cnt += 1
+                depth_list.append(self.input_array[i][1][2] )
+                x_list.append(self.input_array[i][1][0] )
+                y_list.append(self.input_array[i][1][1] )
+
+            else:
+                out_depth.append(self.input_array[i][1][2])
+                x_out.append(self.input_array[i][1][0] )
+                y_out.append(self.input_array[i][1][1] )
+                
+        print("zero : ", zero_error_cnt, '/', len(error_list))
+
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+
+        ax.set_title("3D Distribution")
+        ax.set_xlabel("X (meters)")
+        ax.set_ylabel("Y (meters)")
+        ax.set_zlabel("Depth (meters)")
+
+        ax.scatter(x_list, y_list, depth_list, c='b', marker='o', label='Inlier')
+        ax.scatter(x_out, y_out, out_depth, c='r', marker='x', label='Outlier')
+        ax.legend()
+        plt.tight_layout()
+        plt.show()
+
+
+        '''
+        plt.title("Projection error by the accurate Tcw")
+        plt.xlabel("Key points")
+        plt.ylabel("Pixel")
+        plt.plot( error_list, marker='o', linestyle='' )
+        #plt.xticks( num_of_features )
+        plt.show()
+        '''
+
         return error_list

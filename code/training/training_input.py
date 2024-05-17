@@ -31,8 +31,6 @@ class set_training_input:
             MD = self.get_mean_depth_around_kp_input(i)
             NB = self.get_numbers_of_nearby_kp(i)
 
-            #print( [ uv, XYZ, MD, NB ] )
-
             training_input.append( [uv,XYZ,MD,NB] )
         
         #print("training_input quantity : ", len(training_input) )
@@ -70,6 +68,7 @@ class set_training_input:
 
         return [X, Y, Z]
 
+    # must be implemented
     def get_mean_depth_around_kp_input(self, idx):
         '''
         u & v = now

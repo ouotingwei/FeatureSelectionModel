@@ -33,7 +33,7 @@ if __name__ == '__main__':
     color_img_list, depth_img_list, gt_data_list, sequence_list =  data_preprocess.get_data_list(color_img_file, depth_image_file, gt_file)
 
     num_of_features = []
-
+    error = []
     training_cnt = 1
 
     for i in range(len(color_img_list)-1):
@@ -70,10 +70,11 @@ if __name__ == '__main__':
         training_input = input_.insert_input()
 
         label_ = GENERATE_LABEL.generate_label(training_input, now_img.shape, camera_intrinsics)
-        error_list = label_.get_label()
+        minimum_error, error_list = label_.get_label()
+        error.append(minimum_error/len(trainIdx))
 
         # save training input and labels
-        folder_name = output_folder + '/' + str(i)
+        folder_name = output_folder + '/' + str(training_cnt)
         if not os.path.exists(folder_name):
             os.makedirs(folder_name)
 
@@ -84,16 +85,22 @@ if __name__ == '__main__':
         error_list = np.array(error_list)
         error_list = error_list.reshape(-1, 1)
 
-
         np.save(folder_name + '/' + 'input_uv.npy', training_uv)
         np.save(folder_name + '/' + 'input_XYZ.npy', training_XYZ)
         np.save(folder_name + '/' + 'input_diversity2d.npy', training_diversity2d)
         np.save(folder_name + '/' + 'input_diversity3d.npy', training_diversity3d)
         np.save(folder_name + '/' + 'error.npy', error_list)
-            
 
     print("min : ", min(num_of_features))
     
-    plt.plot( num_of_features, marker='o', linestyle='-' )
+    #plt.title("number of features")
+    #plt.plot( num_of_features, marker='o', linestyle='-' )
+    #plt.xticks( num_of_features )
+    #plt.show()
+
+    plt.title("accumulated error")
+    plt.xlabel("Key Points")
+    plt.ylabel("sum of pixel error ^ 2 / number of points")
+    plt.plot( error, marker='o', linestyle='-' )
     #plt.xticks( num_of_features )
     plt.show()
