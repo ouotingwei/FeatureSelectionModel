@@ -167,7 +167,7 @@ class data_preprocessing:
 
             sequence = float(now_img)
             sequence_list.append(sequence)
-            gt_data_list.append( self.find_gt_by_interpolation(sequence, gt_data) )
+            #gt_data_list.append( self.find_gt_by_interpolation(sequence, gt_data) )
 
         return color_img_list, depth_img_list, gt_data_list, sequence_list 
     

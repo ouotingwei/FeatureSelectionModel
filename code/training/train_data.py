@@ -14,8 +14,8 @@ import orb_operation as ORB
 import generate_label as GENERATE_LABEL
 
 #dataset folder path( change to your own path )
-color_img_file = '/home/wei/deep_feature_selection/data/small_coffee/color'
-depth_image_file = '/home/wei/deep_feature_selection/data/small_coffee/aligned_depth'
+color_img_file = '/home/wei/deep_feature_selection/data/small_office/color'
+depth_image_file = '/home/wei/deep_feature_selection/data/small_office/depth'
 gt_file = '/home/wei/deep_feature_selection/data/small_coffee/groundtruth.txt'
 camera_intrinsics = [4.2214370727539062e+02, 4.2700833129882812e+02, 4.2214370727539062e+02, 2.4522090148925781e+02] # from sensors.yaml ???
 
@@ -39,7 +39,6 @@ if __name__ == '__main__':
     for i in range(len(color_img_list)-1):
         print(" [-] img : ", training_cnt)
         training_cnt += 1
-
         training_input = [] 
 
         # get orb keypoints and descriptor from orb_feature_extraction.py ( return keypoint1 & descriptor1 )

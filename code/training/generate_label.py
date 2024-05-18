@@ -125,7 +125,7 @@ class generate_label:
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
 
-        ax.set_title("3D Distribution")
+        ax.set_title("Key Point 3D Distribution")
         ax.set_xlabel("X (meters)")
         ax.set_ylabel("Y (meters)")
         ax.set_zlabel("Depth (meters)")
@@ -137,13 +137,10 @@ class generate_label:
         plt.show()
 
 
-        '''
         plt.title("Projection error by the accurate Tcw")
         plt.xlabel("Key points")
         plt.ylabel("Pixel")
         plt.plot( error_list, marker='o', linestyle='' )
-        #plt.xticks( num_of_features )
         plt.show()
-        '''
 
         return error_list
