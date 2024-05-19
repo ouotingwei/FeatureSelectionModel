@@ -167,7 +167,7 @@ class data_preprocessing:
 
             sequence = float(now_img)
             sequence_list.append(sequence)
-            #gt_data_list.append( self.find_gt_by_interpolation(sequence, gt_data) )
+            gt_data_list.append( self.find_gt_by_interpolation(sequence, gt_data) )
 
         return color_img_list, depth_img_list, gt_data_list, sequence_list 
     
@@ -197,5 +197,7 @@ class data_preprocessing:
 
         interp_quaw = interp1d(t_, quaw_, kind='linear')
         now_quaw = interp_quaw(sequence)
+
+        print("now_x : ", now_x)
 
         return [now_x, now_y, 0.0, 0.0, 0.0, now_quaz, now_quaw]

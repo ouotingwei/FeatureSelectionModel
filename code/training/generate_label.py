@@ -1,11 +1,9 @@
 import numpy as np
-import time
 import cv2 as cv
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from tqdm import tqdm
 import random
-from numba import jit
 import math
 
 class generate_label:
@@ -120,7 +118,7 @@ class generate_label:
                 x_out.append(self.input_array[i][1][0] )
                 y_out.append(self.input_array[i][1][1] )
                 
-        print("zero : ", zero_error_cnt, '/', len(error_list))
+        print("inlier/outlier : ", zero_error_cnt, '/', len(error_list))
 
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
@@ -136,11 +134,12 @@ class generate_label:
         plt.tight_layout()
         plt.show()
 
-
+        '''
         plt.title("Projection error by the accurate Tcw")
         plt.xlabel("Key points")
         plt.ylabel("Pixel")
         plt.plot( error_list, marker='o', linestyle='' )
         plt.show()
+        '''
 
         return error_list

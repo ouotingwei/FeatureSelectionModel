@@ -2,11 +2,6 @@ import os
 import cv2 as cv
 import matplotlib.pyplot as plt
 import numpy as np
-from typing import List
-from tqdm import tqdm
-from transformers import BertModel
-import torch
-import torch.nn as nn
 
 import featurebooster as FEATUREBOOSTER
 import training_input as TRAINING_INPUT
@@ -14,8 +9,8 @@ import orb_operation as ORB
 import generate_label as GENERATE_LABEL
 
 #dataset folder path( change to your own path )
-color_img_file = '/home/wei/deep_feature_selection/data/small_office/color'
-depth_image_file = '/home/wei/deep_feature_selection/data/small_office/depth'
+color_img_file = '/home/wei/deep_feature_selection/data/small_coffee/color'
+depth_image_file = '/home/wei/deep_feature_selection/data/small_coffee/aligned_depth'
 gt_file = '/home/wei/deep_feature_selection/data/small_coffee/groundtruth.txt'
 camera_intrinsics = [4.2214370727539062e+02, 4.2700833129882812e+02, 4.2214370727539062e+02, 2.4522090148925781e+02] # from sensors.yaml ???
 
@@ -34,7 +29,7 @@ if __name__ == '__main__':
 
     num_of_features = []
     error = []
-    training_cnt = 1
+    training_cnt = 0
 
     for i in range(len(color_img_list)-1):
         print(" [-] img : ", training_cnt)
@@ -70,6 +65,7 @@ if __name__ == '__main__':
 
         label_ = GENERATE_LABEL.generate_label(training_input, now_img.shape, camera_intrinsics)
         minimum_error, error_list = label_.get_label()
+
         error.append(minimum_error/len(trainIdx))
 
         # save training input and labels
@@ -97,9 +93,11 @@ if __name__ == '__main__':
     #plt.xticks( num_of_features )
     #plt.show()
 
+    '''
     plt.title("accumulated error")
     plt.xlabel("Key Points")
     plt.ylabel("sum of pixel error ^ 2 / number of points")
     plt.plot( error, marker='o', linestyle='-' )
     #plt.xticks( num_of_features )
     plt.show()
+    '''
