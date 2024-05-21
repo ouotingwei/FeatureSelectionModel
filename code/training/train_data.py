@@ -9,12 +9,12 @@ import orb_operation as ORB
 import generate_label as GENERATE_LABEL
 
 #dataset folder path( change to your own path )
-color_img_file = '/home/wei/deep_feature_selection/data/small_coffee/color'
-depth_image_file = '/home/wei/deep_feature_selection/data/small_coffee/aligned_depth'
-gt_file = '/home/wei/deep_feature_selection/data/small_coffee/groundtruth.txt'
+color_img_file = '/home/wei/deep_feature_selection/data/small_office/color'
+depth_image_file = '/home/wei/deep_feature_selection/data/small_office/depth'
+gt_file = '/home/wei/deep_feature_selection/data/small_office/groundtruth.txt'
 camera_intrinsics = [4.2214370727539062e+02, 4.2700833129882812e+02, 4.2214370727539062e+02, 2.4522090148925781e+02] # from sensors.yaml ???
 
-output_folder = '/home/wei/deep_feature_selection/training_data/small_coffee'
+output_folder = '/home/wei/deep_feature_selection/training_data/small_office'
 
 if __name__ == '__main__':
     #device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')

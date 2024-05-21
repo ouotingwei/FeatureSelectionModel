@@ -120,6 +120,7 @@ class generate_label:
                 
         print("inlier/outlier : ", zero_error_cnt, '/', len(error_list))
 
+        '''
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
 
@@ -133,6 +134,7 @@ class generate_label:
         ax.legend()
         plt.tight_layout()
         plt.show()
+        '''
 
         '''
         plt.title("Projection error by the accurate Tcw")
