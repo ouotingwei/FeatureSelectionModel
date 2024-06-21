@@ -27,10 +27,10 @@ class orb_features:
         #start_time = time.time()
 
         # Initiate ORB detector
-        #orb = cv.ORB_create(nfeatures=500)
+        orb = cv.ORB_create(nfeatures=1000)
 
         # find the keypoints with ORB
-        #self.keypoint = orb.detect(self.img, None)
+        self.keypoint = orb.detect(self.img, None)
 
         # compute the descriptors with ORB
         self.keypoint, self.descriptor = self.feature_extractor.detectAndCompute(self.img)
@@ -43,8 +43,8 @@ class orb_features:
         self.feature_warning()
 
         # draw only keypoints location,not size and orientation
-        # show = cv.drawKeypoints(self.img, self.keypoint, None, color=(0,255,0), flags=0)
-        # plt.imshow(show), plt.show()
+        show = cv.drawKeypoints(self.img, self.keypoint, None, color=(0,255,0), flags=0)
+        plt.imshow(show), plt.show()
 
         return self.keypoint, self.descriptor
     

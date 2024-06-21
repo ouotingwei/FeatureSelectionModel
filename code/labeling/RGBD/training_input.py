@@ -2,6 +2,7 @@ import numpy as np
 from tqdm import tqdm
 from scipy.interpolate import interp1d
 import os
+import sys
 
 import semantic as semantic
 
@@ -16,7 +17,7 @@ class set_training_input:
         self.now_rgb_img = now_rgb_img
 
         self.depth_scale = 1000
-        self.patch_w = 64
+        self.patch_w = 84.8
         self.patch_h = 48
 
         self.h = now_depth_img.shape[0]
@@ -24,25 +25,55 @@ class set_training_input:
     
     def insert_input(self):
         training_input = []
+        new_uv = []
         
-        for i in range( len(self.nextIdx) ):
+        for i in range(len(self.nextIdx)):
+            now_uv = self.new_uv_input(i)
             uv = self.uv_input(i)
             XYZ = self.XYZ_input(i)
             MD = self.get_mean_depth_around_kp_input(i)
             NB = self.get_numbers_of_nearby_kp(i)
-
-            training_input.append( [uv,XYZ,MD,NB] )
+            RES = self.new_response(i)
+            SIZE = self.new_size(i)
+            
+            if XYZ != [0.0, 0.0, 0.0] and MD != [sys.maxsize]:
+                training_input.append([uv, XYZ, MD, NB, RES, SIZE])
+                new_uv.append(now_uv)
+            '''
+            if XYZ != [0.0, 0.0, 0.0]:
+                training_input.append([uv, XYZ, NB, RES, SIZE])
+                new_uv.append(now_uv)
+            '''
         
-        #print("training_input quantity : ", len(training_input) )
-        
+        '''
         ok_training_input = []
         for i in range( len(self.nextIdx) ):
-            if training_input[i][1] != [0.0, 0.0, 0.0] and training_input[i][1] != [0.0, -0.0, 0.0]:
+            if training_input[i][1] != [0.0, 0.0, 0.0] and training_input[i][1] != [0.0, -0.0, 0.0] and training_input[i][2] != 1000.0:
                 ok_training_input.append( training_input[i] )
+        
 
         print("number of key points : ", len(ok_training_input) )
+        '''
 
-        return ok_training_input
+        return training_input, new_uv
+    
+    def new_response ( self, idx ):
+        response = self.now_kp[ self.nowIdx[idx] ].response
+        return[response]
+    
+    def new_size( self, idx):
+        orb_size = self.now_kp[ self.nowIdx[idx] ].size
+        return[orb_size]
+    
+    def new_uv_input( self, idx ):
+        '''
+        u & v = trainIdx(next)
+        '''
+        u = self.now_kp[ self.nowIdx[idx] ].pt[0] 
+        v = self.now_kp[ self.nowIdx[idx] ].pt[1]
+
+        #return [u/self.w, v/self.h]
+        return [u, v]
 
     def uv_input( self, idx ):
         '''
@@ -61,6 +92,7 @@ class set_training_input:
         '''
         u = self.now_kp[ self.nowIdx[idx] ].pt[0] 
         v = self.now_kp[ self.nowIdx[idx] ].pt[1]
+        #print(u, v)
 
         Z =  self.now_depth_img[int(v), int(u)]  / self.depth_scale
         X = ( u - self.intrinsic[2] ) * Z / self.intrinsic[0]
@@ -77,35 +109,45 @@ class set_training_input:
         [4][5][6]
         [7][8][9]
         '''
-        u = self.now_kp[ self.nowIdx[idx] ].pt[0] 
-        v = self.now_kp[ self.nowIdx[idx] ].pt[1]
-        Z = self.now_depth_img[int(v), int(u)]  / self.depth_scale
+        u = self.now_kp[self.nowIdx[idx]].pt[0]
+        v = self.now_kp[self.nowIdx[idx]].pt[1]
+        Z = self.now_depth_img[int(v), int(u)] / self.depth_scale
 
-        rows, cols = np.indices((3, 3)) - 1
+        # 初始化深度累計值和計數器
+        total_depth = 0
+        count = 0
+        
+        # 遍歷3x3鄰域
+        for i in range(-1, 2):
+            for j in range(-1, 2):
+                u_neigh = int(u) + i
+                v_neigh = int(v) + j
+                if 0 <= u_neigh < self.now_depth_img.shape[1] and 0 <= v_neigh < self.now_depth_img.shape[0]:
+                    depth_value = self.now_depth_img[v_neigh, u_neigh]
+                    if depth_value != 0.0:
+                        total_depth += depth_value
+                        count += 1
 
-        row_indices = np.int32(u) + rows
-        col_indices = np.int32(v) + cols
+        if count == 0:
+            return [sys.maxsize]
 
-        # true -> indices is in the boundary(img)
-        valid_indices = (row_indices >= 0) & (row_indices < self.h) & (col_indices >= 0) & (col_indices < self.w)
+        mean_depth = total_depth / count
 
-        # calculate the mean_depth
-        valid_depths = self.now_depth_img[row_indices[valid_indices], col_indices[valid_indices]]
-        mean_depth = np.mean(valid_depths) / self.depth_scale if len(valid_depths) > 0 else None
+        center_depth = self.now_depth_img[int(v), int(u)]
 
-        if mean_depth is not None:
-            diff = abs(mean_depth - Z)
-        else:
-            diff = None
+        if center_depth == 0.0:
+            return float(sys.maxsize)
 
-        return [diff]
+        depth_diff = abs(center_depth - mean_depth) / self.depth_scale
+
+        return [float(depth_diff)]
 
     def get_numbers_of_nearby_kp(self, idx):
         '''
         u & v = next
         '''
-        u = self.next_kp[ self.nextIdx[idx] ].pt[0] 
-        v = self.next_kp[ self.nextIdx[idx] ].pt[1]
+        u = self.now_kp[ self.nowIdx[idx] ].pt[0] 
+        v = self.now_kp[ self.nowIdx[idx] ].pt[1]
 
         # kp range
         u_min = u - self.patch_w/2
@@ -115,8 +157,8 @@ class set_training_input:
 
         # num of kp in one patch
         cnt = sum(
-            1 for i in self.nextIdx
-            if u_min < self.next_kp[i].pt[0] < u_max and v_min < self.next_kp[i].pt[1] < v_max
+            1 for i in self.nowIdx
+            if u_min < self.now_kp[i].pt[0] < u_max and v_min < self.now_kp[i].pt[1] < v_max
         )
 
         cnt -= 1
@@ -130,7 +172,7 @@ class data_preprocessing:
     def get_intrinsic_from_ymal(self):
         pass
 
-    def get_data_list(self, color_file_path, depth_file_path, gt_file_path):
+    def get_data_list(self, color_file_path, depth_file_path):
         '''
         input : color_file, depth_file, gt_file
         output : color_path_list, depth_path_list, gt_data_list
@@ -140,19 +182,8 @@ class data_preprocessing:
         depth_files = sorted(os.listdir(depth_file_path), key=lambda x: float(os.path.splitext(x)[0]))
         sequence = color_files
 
-        gt_data = []
-        with open(gt_file_path, 'r') as file:
-            for line in file:
-                if line.startswith('#'):
-                    continue
-                parts = line.strip().split(' ')
-                time = float(parts[0])
-                gt_entry = (time, *map(float, parts[1:]))
-                gt_data.append(gt_entry)
-
         color_img_list = []
         depth_img_list = []
-        gt_data_list = []
         sequence_list = []
 
         for i in tqdm(range(len(color_files)), "loading data ..."):
@@ -167,37 +198,5 @@ class data_preprocessing:
 
             sequence = float(now_img)
             sequence_list.append(sequence)
-            gt_data_list.append( self.find_gt_by_interpolation(sequence, gt_data) )
 
-        return color_img_list, depth_img_list, gt_data_list, sequence_list 
-    
-    def find_gt_by_interpolation(self, sequence, gt_data):
-        closet_index = None
-        for i in range(len(gt_data)):
-            if gt_data[i][0] > sequence:
-                closet_index = i
-                break
-
-        big_index = closet_index
-        small_index = closet_index - 1
-        t_ = [gt_data[small_index][0], gt_data[big_index][0]]
-        x_ = [gt_data[small_index][1], gt_data[big_index][1]]
-        y_ = [gt_data[small_index][2], gt_data[big_index][2]]
-        quaz_ = [gt_data[small_index][6], gt_data[big_index][6]]
-        quaw_ = [gt_data[small_index][7], gt_data[big_index][7]]
-
-        interp_x = interp1d(t_, x_, kind='linear')
-        now_x = interp_x(sequence)
-
-        interp_y = interp1d(t_, y_, kind='linear')
-        now_y = interp_y(sequence)
-
-        interp_quaz = interp1d(t_, quaz_, kind='linear')
-        now_quaz = interp_quaz(sequence)
-
-        interp_quaw = interp1d(t_, quaw_, kind='linear')
-        now_quaw = interp_quaw(sequence)
-
-        print("now_x : ", now_x)
-
-        return [now_x, now_y, 0.0, 0.0, 0.0, now_quaz, now_quaw]
+        return color_img_list, depth_img_list, sequence_list 

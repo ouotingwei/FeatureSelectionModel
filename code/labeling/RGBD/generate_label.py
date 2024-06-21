@@ -13,7 +13,7 @@ class generate_label:
         self.camera_matrix = np.array([[camera_intrinsic[0], 0, camera_intrinsic[2]], [0, camera_intrinsic[1], camera_intrinsic[3]], [0, 0, 1]], dtype=float)
         self.h = img_size[0]
         self.w = img_size[1]
-        self.iterations = 1000
+        self.iterations = 2000
         self.error_threshold = 5.991
 
     def get_label(self):
@@ -100,39 +100,33 @@ class generate_label:
             error_list.append( math.sqrt( (project_u - point[0][0]) ** 2 + (project_v - point[0][1]) ** 2 ) )
         
         zero_error_cnt = 0
-        depth_list = []
-        x_list = []
-        y_list = []
-        out_depth = []
-        x_out = []
-        y_out = []
+        u_list = []
+        v_list = []
+        u_out = []
+        v_out = []
         for i in range(len(error_list)):
-            if error_list[i] <= 0.5:
+            if error_list[i] < 1.2:
                 zero_error_cnt += 1
-                depth_list.append(self.input_array[i][1][2] )
-                x_list.append(self.input_array[i][1][0] )
-                y_list.append(self.input_array[i][1][1] )
+                u_list.append(self.input_array[i][0][0] )
+                v_list.append(self.input_array[i][0][1] )
 
             else:
-                out_depth.append(self.input_array[i][1][2])
-                x_out.append(self.input_array[i][1][0] )
-                y_out.append(self.input_array[i][1][1] )
+                u_out.append(self.input_array[i][0][0] )
+                v_out.append(self.input_array[i][0][1] )
                 
-        print("inlier/outlier : ", zero_error_cnt, '/', len(error_list))
+        print("inlier/all : ", zero_error_cnt, '/', len(error_list))
 
+        # show inlier / outlier (uv)
+        
         '''
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
+        plt.figure(figsize=(10, 6))
+        plt.scatter(u_list, v_list, color='blue', label='Inliers')
+        plt.scatter(u_out, v_out, color='red', label='Outliers')
+        plt.legend()
+        plt.title('Inliers and Outliers')
+        plt.xlabel('u')
+        plt.ylabel('v')
 
-        ax.set_title("Key Point 3D Distribution")
-        ax.set_xlabel("X (meters)")
-        ax.set_ylabel("Y (meters)")
-        ax.set_zlabel("Depth (meters)")
-
-        ax.scatter(x_list, y_list, depth_list, c='b', marker='o', label='Inlier')
-        ax.scatter(x_out, y_out, out_depth, c='r', marker='x', label='Outlier')
-        ax.legend()
-        plt.tight_layout()
         plt.show()
         '''
 

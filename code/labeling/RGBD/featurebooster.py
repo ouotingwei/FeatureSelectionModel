@@ -254,11 +254,13 @@ def booster_process(image):
     
     # convert keypoints 
     keypoints = [cv.KeyPoint(*kp) for kp in kps_tuples]
+    
     keypoints = np.array(
-        [[kp.pt[0], kp.pt[1], kp.size / 31, np.deg2rad(kp.angle)] for kp in keypoints], 
+        [[kp.pt[0], kp.pt[1], kp.size / 31, np.deg2rad(kp.angle), kp.response] for kp in keypoints], 
         dtype=np.float32
     )
 
+    
     # boosted the descriptor using trained model
     kps = normalize_keypoints(keypoints, image.shape)
     kps = torch.from_numpy(kps.astype(np.float32))
@@ -269,8 +271,8 @@ def booster_process(image):
     if use_cuda:
         kps = kps.cuda()
         descriptors = descriptors.cuda()
-
-    out = feature_booster(descriptors, kps)
+    #print(kps.shape)
+    out = feature_booster(descriptors, kps[:,:4])
     out = (out >= 0).cpu().detach().numpy()
     descriptors = np.packbits(out, axis=1, bitorder='little')
 
@@ -286,6 +288,7 @@ def convert_to_cv_keypoints(keypoints):
         x, y = kp[0], kp[1]
         size = kp[2]
         angle = kp[3]
-        cv_kp = cv.KeyPoint(x, y, size, angle)
+        response = kp[4]
+        cv_kp = cv.KeyPoint(x, y, size, angle, response)
         cv_keypoints.append(cv_kp)
     return cv_keypoints
