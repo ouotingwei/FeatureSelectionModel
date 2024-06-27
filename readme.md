@@ -2,17 +2,6 @@ Author 1 : Ting-Wei, Ou @ NYCU M.S in Robotics
 Author 2 : Jihn-Yang, Long @ NYCU M.S in Robotics
 
 ## Training
-- set up the env from -> https://github.com/SJTU-ViSYS/FeatureBooster.git
-
-- activate the env
-```
-conda activate featurebooster
-```
-
-- shut down the env
-```
-conda deactivate featurebooster
-```
 
 ### Build the ORBSLAM2 features
 ```

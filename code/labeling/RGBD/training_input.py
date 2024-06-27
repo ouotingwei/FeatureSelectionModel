@@ -4,8 +4,6 @@ from scipy.interpolate import interp1d
 import os
 import sys
 
-import semantic as semantic
-
 class set_training_input:
     def __init__(self, queryIdx, trainIdx, now_kp, next_kp, intrinsic, now_depth_img, now_rgb_img):
         self.nowIdx = queryIdx

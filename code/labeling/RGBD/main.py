@@ -3,23 +3,22 @@ import cv2 as cv
 import matplotlib.pyplot as plt
 import numpy as np
 
-import featurebooster as FEATUREBOOSTER
 import training_input as TRAINING_INPUT
 import orb_operation as ORB
 import generate_label as GENERATE_LABEL
 
 # dataset folder path( change to your own path )
-color_file_path = '/media/wei/T7/資料集/training_800/1-2/color'
-depth_file_path = '/media/wei/T7/資料集/training_800/1-2/depth'
+color_file_path = '/media/ee605-wei/T7/資料集/training_800/1-2/color'
+depth_file_path = '/media/ee605-wei/T7/資料集/training_800/1-2/depth'
 camera_intrinsics = [611.4509887695312, 611.4857177734375, 433.2039794921875, 249.4730224609375] # fx, fy, cx, cy
-output_folder = '/home/wei/deep_feature_selection/training_data/loris_800'
+output_folder = '/home/ee605-wei/FeatureSelectionModel/training_data/loris_800'
 
 if __name__ == '__main__':
-
     if not os.path.exists(color_file_path) or not os.path.exists(depth_file_path):
         print("file is not exist !")
         exit()
 
+    # image path -> list
     data_preprocess = TRAINING_INPUT.data_preprocessing()
     color_img_list, depth_img_list, sequence_list =  data_preprocess.get_data_list(color_file_path, depth_file_path)
 
@@ -41,19 +40,11 @@ if __name__ == '__main__':
         print("Next image size (next_img):", next_img.shape)
         print("Current depth image size (now_depth_img):", now_depth_img.shape)
         
-        # Feature booster
-        now_kp, now_des = FEATUREBOOSTER.booster_process( now_img )
-        next_kp, next_des = FEATUREBOOSTER.booster_process( next_img )
-
-
-        # convert the keypoint into cv format
-        now_kp = FEATUREBOOSTER.convert_to_cv_keypoints(now_kp)
-        next_kp = FEATUREBOOSTER.convert_to_cv_keypoints(next_kp)
-
-        #now_image_ = ORB.orb_features( now_img )
-        #next_image_ = ORB.orb_features( next_img )
-        #now_kp, now_des = now_image_.feature_extract() 
-        #next_kp, next_des = next_image_.feature_extract() 
+        # ORB Feature Extraction
+        now_image_ = ORB.orb_features( now_img )
+        next_image_ = ORB.orb_features( next_img )
+        now_kp, now_des = now_image_.feature_extract() 
+        next_kp, next_des = next_image_.feature_extract() 
 
         # matching the feature between two  image frames
         matcher_ = ORB.feature_match( now_img, next_img, now_kp, next_kp, now_des, next_des ) 
@@ -91,14 +82,3 @@ if __name__ == '__main__':
         np.save(folder_name + '/' + 'input_response.npy', training_response)
         np.save(folder_name + '/' + 'input_size.npy', training_size)
         np.save(folder_name + '/' + 'error.npy', error_list)
-
-    #print("min : ", min(num_of_features))
-
-    '''
-    plt.title("accumulated error")
-    plt.xlabel("Key Points")
-    plt.ylabel("sum of pixel error ^ 2 / number of points")
-    plt.plot( error, marker='o', linestyle='-' )
-    #plt.xticks( num_of_features )
-    plt.show()
-    '''
