@@ -31,14 +31,12 @@ if __name__ == '__main__':
         training_cnt += 1
         training_input = [] 
 
-        # get orb keypoints and descriptor from orb_feature_extraction.py ( return keypoint1 & descriptor1 )
+        # now
         now_img = cv.imread( color_img_list[i] ) 
-        next_img = cv.imread( color_img_list[i+1] )
         now_depth_img = cv.imread( depth_img_list[i], cv.IMREAD_UNCHANGED )
-
-        print("Current image size (now_img):", now_img.shape)
-        print("Next image size (next_img):", next_img.shape)
-        print("Current depth image size (now_depth_img):", now_depth_img.shape)
+        # next
+        next_img = cv.imread( color_img_list[i+1] )
+        next_depth_img = cv.imread( depth_img_list[i+1], cv.IMREAD_UNCHANGED )
         
         # ORB Feature Extraction
         now_image_ = ORB.orb_features( now_img )
@@ -48,9 +46,14 @@ if __name__ == '__main__':
 
         # matching the feature between two  image frames
         matcher_ = ORB.feature_match( now_img, next_img, now_kp, next_kp, now_des, next_des ) 
-        queryIdx, trainIdx = matcher_.frame_match()
-        num_of_features.append( len(trainIdx) )
+        queryIdx, trainIdx = matcher_.frame_match() # now->query, next->train
 
+        # ICP
+        
+
+        # PnP
+
+        '''
         # insert features into training_input
         input_ = TRAINING_INPUT.set_training_input(queryIdx, trainIdx, now_kp, next_kp, camera_intrinsics, now_depth_img, now_img)
         training_input, new_uv = input_.insert_input()
@@ -82,3 +85,4 @@ if __name__ == '__main__':
         np.save(folder_name + '/' + 'input_response.npy', training_response)
         np.save(folder_name + '/' + 'input_size.npy', training_size)
         np.save(folder_name + '/' + 'error.npy', error_list)
+        '''
