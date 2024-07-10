@@ -8,10 +8,14 @@ import orb_operation as ORB
 import generate_label as GENERATE_LABEL
 
 # dataset folder path( change to your own path )
-color_file_path = '/media/ee605-wei/T7/資料集/training_800/1-2/color'
-depth_file_path = '/media/ee605-wei/T7/資料集/training_800/1-2/depth'
-camera_intrinsics = [611.4509887695312, 611.4857177734375, 433.2039794921875, 249.4730224609375] # fx, fy, cx, cy
-output_folder = '/home/ee605-wei/FeatureSelectionModel/training_data/loris_800'
+color_file_path = '/media/ee605-wei/ROG_512_SSD/lab605_dynamic/color'
+depth_file_path = '/media/ee605-wei/ROG_512_SSD/lab605_dynamic/depth'
+tf_file_path = '/media/ee605-wei/ROG_512_SSD/lab605_dynamic/tf'
+output_folder = '/home/ee605-wei/FeatureSelectionModel/training_data/dynamic_data'
+
+camera_intrinsics = [589.662879, 592.577963, 313.100104, 251.210229] # fx, fy, cx, cy -> realsense D435 (605)
+frameInterval = 1
+VisibilityInterval = 1
 
 if __name__ == '__main__':
     if not os.path.exists(color_file_path) or not os.path.exists(depth_file_path):
@@ -20,48 +24,93 @@ if __name__ == '__main__':
 
     # image path -> list
     data_preprocess = TRAINING_INPUT.data_preprocessing()
-    color_img_list, depth_img_list, sequence_list =  data_preprocess.get_data_list(color_file_path, depth_file_path)
+    color_img_list = data_preprocess.get_data_list(color_file_path, '.png')
+    depth_img_list = data_preprocess.get_data_list(depth_file_path, '.png')
+    tf_list = data_preprocess.get_data_list(tf_file_path, '.txt')
 
     num_of_features = []
     error = []
-    training_cnt = 0
 
-    for i in range(len(color_img_list)-1):
-        print(" [-] img : ", training_cnt)
-        training_cnt += 1
+    for i in range(0, len(color_img_list), frameInterval): 
+        if (i % 100) >= 90:  # 如果超過90張，跳過
+            continue
+
         training_input = [] 
+        # sequence t
+        now_img = cv.imread(color_img_list[i]) 
+        now_depth_img = cv.imread(depth_img_list[i], cv.IMREAD_UNCHANGED)
+        now_tf = data_preprocess.get_tf(tf_list[i])
 
-        # now
-        now_img = cv.imread( color_img_list[i] ) 
-        now_depth_img = cv.imread( depth_img_list[i], cv.IMREAD_UNCHANGED )
-        # next
-        next_img = cv.imread( color_img_list[i+1] )
-        next_depth_img = cv.imread( depth_img_list[i+1], cv.IMREAD_UNCHANGED )
-        
+        # sequence t+1
+        if i + frameInterval < len(color_img_list):  # 確保不會超過範圍
+            next_img = cv.imread(color_img_list[i+frameInterval])
+            next_depth_img = cv.imread(depth_img_list[i+frameInterval], cv.IMREAD_UNCHANGED)
+            next_tf = data_preprocess.get_tf(tf_list[i+frameInterval])
+        else:
+            continue  # 跳過處理
+
         # ORB Feature Extraction
-        now_image_ = ORB.orb_features( now_img )
-        next_image_ = ORB.orb_features( next_img )
+        now_image_ = ORB.orb_features(now_img) 
         now_kp, now_des = now_image_.feature_extract() 
+        next_image_ = ORB.orb_features(next_img)
         next_kp, next_des = next_image_.feature_extract() 
 
         # matching the feature between two  image frames
-        matcher_ = ORB.feature_match( now_img, next_img, now_kp, next_kp, now_des, next_des ) 
-        queryIdx, trainIdx = matcher_.frame_match() # now->query, next->train
+        matcher_ = ORB.feature_match(now_img, next_img, now_kp, next_kp, now_des, next_des) 
+        queryIdx, trainIdx = matcher_.frame_match()  # now->query, next->train
 
-        # ICP
+        # calculate the transition matrix between now and next images.
+        transition_matrix = data_preprocess.get_translation_matrix(now_tf, next_tf)
         
+        '''
+        Calculate the Visibility
+        '''
+        '''
+        match_list = np.ones(len(queryIdx))
+        base_kp = []
+        base_des = []
 
-        # PnP
+        for j in range(len(queryIdx)):
+            base_kp.append(now_kp[queryIdx[j]])
+            base_des.append(now_des[queryIdx[j]])
 
+        base_des = cv.UMat(np.array(base_des))
+        
+        for j in range(i+1, min(i+VisibilityInterval, i+(100-i%100)-10)):  # 確保在當前區間內的範圍
+            print("j now img : ", j)
+            # sequence t+1
+            ne_img = cv.imread(color_img_list[j])
+
+            # ORB Feature Extraction
+            ne_image_ = ORB.orb_features(ne_img)
+            ne_kp, ne_des = ne_image_.feature_extract() 
+
+            # matching the feature between two  image frames
+            matcher_ = ORB.feature_match(now_img, ne_img, base_kp, ne_kp, base_des, ne_des) 
+            quIdx, trIdx = matcher_.frame_match()  # now->query, next->train
+
+            for k in range(len(quIdx)):
+                match_list[quIdx[k]] += 1
+
+        cnt = 0
+        for j in range(len(match_list)):
+            if match_list[j] == VisibilityInterval:
+                cnt += 1
+
+        print("visibility : ", cnt/len(match_list)*100, " %")
+        '''
+
+        '''
+        Calculate the Reprojection Error
         '''
         # insert features into training_input
         input_ = TRAINING_INPUT.set_training_input(queryIdx, trainIdx, now_kp, next_kp, camera_intrinsics, now_depth_img, now_img)
         training_input, new_uv = input_.insert_input()
 
-        label_ = GENERATE_LABEL.generate_label(training_input, now_img.shape, camera_intrinsics)
-        minimum_error, error_list = label_.get_label()
-
-        # save training input and labels
+        label_ = GENERATE_LABEL.generate_label(training_input, now_img, now_img.shape, camera_intrinsics, transition_matrix)
+        error_list = label_.get_label()
+        
+        '''
         folder_name = output_folder + '/' + str(training_cnt)
         if not os.path.exists(folder_name):
             os.makedirs(folder_name)

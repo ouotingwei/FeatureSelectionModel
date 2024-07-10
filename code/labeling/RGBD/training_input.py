@@ -3,6 +3,7 @@ from tqdm import tqdm
 from scipy.interpolate import interp1d
 import os
 import sys
+import math
 
 class set_training_input:
     def __init__(self, queryIdx, trainIdx, now_kp, next_kp, intrinsic, now_depth_img, now_rgb_img):
@@ -170,31 +171,75 @@ class data_preprocessing:
     def get_intrinsic_from_ymal(self):
         pass
 
-    def get_data_list(self, color_file_path, depth_file_path):
-        '''
-        input : color_file, depth_file, gt_file
-        output : color_path_list, depth_path_list, gt_data_list
-        '''
+    def get_data_list(self, file_path, type='.png'):
+        files = sorted(os.listdir(file_path), key=lambda x: float(os.path.splitext(x)[0]))
+        list = []
 
-        color_files = sorted(os.listdir(color_file_path), key=lambda x: float(os.path.splitext(x)[0]))
-        depth_files = sorted(os.listdir(depth_file_path), key=lambda x: float(os.path.splitext(x)[0]))
-        sequence = color_files
+        for i in tqdm(range(len(files)), "loading data ..."):
+            now = files[i].rsplit('.', 1)[0]
+            now_path = os.path.join(file_path, now + type)
+            list.append(now_path)
 
-        color_img_list = []
-        depth_img_list = []
-        sequence_list = []
+        return list
+    
+    def quaternion_to_rotation_matrix(self,quaternion):
+        q = np.array(quaternion, dtype=np.float64, copy=True)
+        n = np.dot(q, q)
+        if n < np.finfo(q.dtype).eps:
+            return np.identity(3)
+        q *= np.sqrt(2.0 / n)
+        q = np.outer(q, q)
+        return np.array([
+            [1.0 - q[2, 2] - q[3, 3], q[1, 2] - q[3, 0], q[1, 3] + q[2, 0]],
+            [q[1, 2] + q[3, 0], 1.0 - q[1, 1] - q[3, 3], q[2, 3] - q[1, 0]],
+            [q[1, 3] - q[2, 0], q[2, 3] + q[1, 0], 1.0 - q[1, 1] - q[2, 2]]
+        ])
+    
+    def get_tf(self, file_path):
+        with open(file_path, 'r') as file:
+            lines = file.readlines()
+        
+        transformations = []
 
-        for i in tqdm(range(len(color_files)), "loading data ..."):
-            now_img = color_files[i].rsplit('.', 1)[0]
-            now_depth = depth_files[i].rsplit('.', 1)[0]
+        for line in lines:
+            data = line.strip().split()
+            translation = list(map(float, data[:3]))
+            rotation = list(map(float, data[3:]))
+            
+            # Convert quaternion to rotation matrix
+            rotation_matrix = self.quaternion_to_rotation_matrix(rotation)
+            
+            # Create 4x4 transformation matrix
+            transformation_matrix = np.eye(4)
+            transformation_matrix[:3, :3] = rotation_matrix
+            transformation_matrix[:3, 3] = translation
+            
+            transformations.append(transformation_matrix)
+        
+        # Initialize transformation matrix
+        T_cam = np.eye(4)
 
-            now_img_path = os.path.join(color_file_path, now_img + ".png")
-            now_depth_path = os.path.join(depth_file_path, now_depth + ".png")
+        # Combine all transformations
+        for transformation in transformations:
+            T_cam = T_cam @ transformation
+        
+        t_x = np.array([[1, 0, 0, 0],
+                        [0, math.cos(-math.pi/2), -math.sin(-math.pi/2), 0],
+                        [0, math.sin(-math.pi/2), math.cos(-math.pi/2), 0],
+                        [0, 0, 0, 1]])
 
-            color_img_list.append(now_img_path)
-            depth_img_list.append(now_depth_path)
+        # 創建 t_z 矩陣
+        t_z = np.array([[math.cos(-math.pi / 2), -math.sin(-math.pi / 2), 0, 0],
+                        [math.sin(-math.pi / 2), math.cos(-math.pi / 2), 0, 0],
+                        [0, 0, 1, 0],
+                        [0, 0, 0, 1]])
+            
+        T_cam = t_x @ t_z @ T_cam
 
-            sequence = float(now_img)
-            sequence_list.append(sequence)
-
-        return color_img_list, depth_img_list, sequence_list 
+        return T_cam
+    
+    def get_translation_matrix(self, now_tf, next_tf):
+        now_tf_inv = np.linalg.inv(now_tf)
+        delta_tf = np.dot(next_tf, now_tf_inv)
+        np.set_printoptions(suppress=True)
+        return delta_tf

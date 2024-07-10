@@ -39,8 +39,8 @@ class orb_features:
         self.feature_warning()
 
         # draw only keypoints location,not size and orientation
-        show = cv.drawKeypoints(self.img, self.keypoint, None, color=(0,255,0), flags=0)
-        plt.imshow(show), plt.show()
+        #show = cv.drawKeypoints(self.img, self.keypoint, None, color=(0,255,0), flags=0)
+        #plt.imshow(show), plt.show()
 
         return self.keypoint, self.descriptor
     
@@ -79,24 +79,33 @@ class feature_match:
                 max_dist = dist
 
 
-        print("Found minimum distance", min_dist, max_dist)
+        #print("Found minimum distance", min_dist, max_dist)
         
         # Filter matches based on the Hamming distance
         good_matches = []
         queryIdx = []
         trainIdx = []
         for match in matches:
-            if match.distance <= 30:
+            if match.distance <= 40* min_dist:
                 good_matches.append(match)
                 queryIdx.append(match.queryIdx)
                 trainIdx.append(match.trainIdx)
                
-        
+        print("good matches", len(good_matches))
         # Draw only good matches
         img3 = cv.drawMatches(self.img1, self.keypoint1, self.img2, self.keypoint2, good_matches, None, flags=cv.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
+
+        matched_keypoints1 = [self.keypoint1[match.queryIdx] for match in good_matches]
+
+        img_with_keypoints = cv.drawKeypoints(self.img1, matched_keypoints1, None, flags=cv.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
+
+        # 显示图像
+        #cv.imshow('Matched Keypoints', img_with_keypoints)
+        #cv.waitKey(0)
+        #cv.destroyAllWindows()
         
         # Display the result
-        plt.imshow(img3)
-        plt.show()
+        #plt.imshow(img3)
+        #plt.show()
 
         return queryIdx, trainIdx
