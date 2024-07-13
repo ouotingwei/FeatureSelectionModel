@@ -11,14 +11,14 @@ class generate_label:
         self.camera_matrix = np.array([[camera_intrinsic[0], 0, camera_intrinsic[2]], [0, camera_intrinsic[1], camera_intrinsic[3]], [0, 0, 1]], dtype=float)
         self.transition = T
         self.h = img_size[0]
-        self.img = img
+        self.img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
         self.w = img_size[1]
 
     def get_label(self):
         # set inlier && outlier label by T
-        error_list = self.find_reprojection_error()
+        error_list, rate = self.find_reprojection_error()
 
-        return error_list
+        return error_list, rate
     
     def find_reprojection_error(self):
         K = self.camera_matrix
@@ -58,11 +58,13 @@ class generate_label:
         print("Standard deviation of error list:", std_error)
         
         print("reprojection inlier rate = ", len(u_list)/len(error_list)*100, " %")
+        
         if (len(u_list)/len(error_list)*100 > 70 and len(u_list)/len(error_list)*100 < 90):
             # show inlier / outlier (uv)
             
             plt.figure(figsize=(10, 6))
             plt.imshow(self.img)
+            plt.axis('off')
             plt.scatter(u_list, v_list, color='blue', label='Inliers')
             plt.scatter(u_out, v_out, color='red', label='Outliers')
             plt.legend()
@@ -71,6 +73,7 @@ class generate_label:
             plt.ylabel('v')
 
             plt.show()
+        
 
         '''
         plt.title("Projection error by the accurate Tcw")
@@ -80,4 +83,4 @@ class generate_label:
         plt.show()
         '''
 
-        return error_list
+        return error_list, len(u_list)/len(error_list)*100

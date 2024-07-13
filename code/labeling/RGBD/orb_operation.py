@@ -86,7 +86,7 @@ class feature_match:
         queryIdx = []
         trainIdx = []
         for match in matches:
-            if match.distance <= 40* min_dist:
+            if match.distance <= 30* min_dist:
                 good_matches.append(match)
                 queryIdx.append(match.queryIdx)
                 trainIdx.append(match.trainIdx)

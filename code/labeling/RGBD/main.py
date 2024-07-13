@@ -30,6 +30,7 @@ if __name__ == '__main__':
 
     num_of_features = []
     error = []
+    cnt = 0
 
     for i in range(0, len(color_img_list), frameInterval): 
         if (i % 100) >= 90:  # 如果超過90張，跳過
@@ -108,7 +109,12 @@ if __name__ == '__main__':
         training_input, new_uv = input_.insert_input()
 
         label_ = GENERATE_LABEL.generate_label(training_input, now_img, now_img.shape, camera_intrinsics, transition_matrix)
-        error_list = label_.get_label()
+        error_list, rate = label_.get_label()
+        
+        if(rate > 70 and rate < 90):
+            cnt += 1
+        
+        print("training data : ", cnt)
         
         '''
         folder_name = output_folder + '/' + str(training_cnt)
