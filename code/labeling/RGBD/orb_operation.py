@@ -91,7 +91,7 @@ class feature_match:
                 queryIdx.append(match.queryIdx)
                 trainIdx.append(match.trainIdx)
                
-        print("good matches", len(good_matches))
+        #print("good matches", len(good_matches))
         # Draw only good matches
         img3 = cv.drawMatches(self.img1, self.keypoint1, self.img2, self.keypoint2, good_matches, None, flags=cv.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
 

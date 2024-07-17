@@ -55,6 +55,28 @@ class set_training_input:
         '''
 
         return training_input, new_uv
+
+    def get_point(self):
+        point2d_train = []
+        for point in self.nextIdx:
+            u = self.next_kp[ point ].pt[0] 
+            v = self.next_kp[ point ].pt[1] 
+            point2d_train.append([u, v])
+        
+        point_3d_query = []
+        for point in self.nowIdx: 
+            u = self.now_kp[ point ].pt[0] 
+            v = self.now_kp[ point ].pt[1] 
+            Z =  self.now_depth_img[int(v), int(u)]  / self.depth_scale
+            X = ( u - self.intrinsic[2] ) * Z / self.intrinsic[0]
+            Y = ( v - self.intrinsic[3] ) * Z / self.intrinsic[1]
+            point_3d_query.append([X, Y, Z])
+
+        octave = []
+        for point in self.nowIdx: 
+            octave.append(self.now_kp[ point ].octave)
+        
+        return point_3d_query, point2d_train, octave
     
     def new_response ( self, idx ):
         response = self.now_kp[ self.nowIdx[idx] ].response
